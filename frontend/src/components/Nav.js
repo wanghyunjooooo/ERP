@@ -13,7 +13,10 @@ function BottomNav({ onMenuSelect }) {
 
   const handleSelect = (menu) => {
     setActive(menu);
-    onMenuSelect(menu);
+    // ✅ onMenuSelect가 함수일 때만 호출
+    if (typeof onMenuSelect === "function") {
+      onMenuSelect(menu);
+    }
   };
 
   const activeColor = "#007bff"; // 파란 포인트
@@ -33,7 +36,7 @@ function BottomNav({ onMenuSelect }) {
       bg="white"
       className="shadow-lg border-top justify-content-around py-2"
       style={{
-        height: "80px", // ✅ iPhone 14 Pro Max 하단 안전영역 고려
+        height: "80px",
         paddingBottom: "env(safe-area-inset-bottom)",
         borderRadius: "20px 20px 0 0",
         backdropFilter: "blur(8px)",
@@ -42,7 +45,7 @@ function BottomNav({ onMenuSelect }) {
       <Nav
         className="d-flex justify-content-between align-items-center w-100 px-3"
         style={{
-          maxWidth: "430px", // ✅ iPhone 14 Pro Max 화면 너비 기준
+          maxWidth: "430px",
           margin: "0 auto",
         }}
       >

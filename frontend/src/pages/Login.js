@@ -1,36 +1,48 @@
-// src/Login.js
-import React, { useState } from "react";
-import { Form, Button, Card, Container } from "react-bootstrap";
+// src/pages/Login.js
+import React, { useState, useEffect } from "react";
+import { Form, Button, Card } from "react-bootstrap";
+import { useNavigate } from "react-router-dom";
 
-function Login({ onLoginSuccess }) {
+function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = "auto";
+    };
+  }, []);
 
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    // ✅ 실제 로그인 API 연동 자리는 여기에
-    // fetch("/api/login", { method: "POST", body: JSON.stringify({ email, password }) })
-
     if (email && password) {
       alert("로그인 성공!");
-      onLoginSuccess(); // App.js에서 Home 화면으로 전환
+      localStorage.setItem("isLoggedIn", "true");
+      navigate("/");
     } else {
       alert("이메일과 비밀번호를 입력하세요.");
     }
   };
 
   return (
-    <Container
-      className="d-flex justify-content-center align-items-center vh-100"
+    <div
       style={{
+        height: "100vh",
+        width: "100%",
+        margin: 0,
+        padding: 0,
         background: "linear-gradient(135deg, #74ABE2, #5563DE)",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
       }}
     >
       <Card
-        className="shadow-lg p-4"
+        className="shadow-lg p-4 w-100"
         style={{
-          width: "100%",
           maxWidth: "380px",
           borderRadius: "25px",
           background: "white",
@@ -58,7 +70,7 @@ function Login({ onLoginSuccess }) {
             />
           </Form.Group>
 
-          <Form.Group className="mb-3" controlId="formBasicPassword">
+          <Form.Group className="mb-4" controlId="formBasicPassword">
             <Form.Label>비밀번호</Form.Label>
             <Form.Control
               type="password"
@@ -81,11 +93,21 @@ function Login({ onLoginSuccess }) {
           >
             로그인
           </Button>
-
-         
         </Form>
+
+        <div className="text-center mt-4">
+          <p className="text-muted mb-1">아직 회원이 아니신가요?</p>
+          <Button
+            variant="link"
+            className="p-0 fw-semibold"
+            style={{ color: "#4e73df", textDecoration: "none" }}
+            onClick={() => navigate("/signup")}
+          >
+            회원가입하기
+          </Button>
+        </div>
       </Card>
-    </Container>
+    </div>
   );
 }
 
