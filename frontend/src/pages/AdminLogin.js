@@ -12,9 +12,10 @@ function AdminLogin() {
   const handleSubmit = (e) => {
     e.preventDefault();
 
+    // 간단한 관리자 인증 로직
     if (id === "admin" && password === "1234") {
       alert("✅ 관리자 로그인 성공!");
-      navigate("/admin/dashboard");
+      navigate("/admin/dashboard"); // ✅ 대시보드로 이동
     } else {
       alert("❌ 관리자 계정이 올바르지 않습니다.");
     }
