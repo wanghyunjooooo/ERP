@@ -1,0 +1,91 @@
+import React, { useState } from "react";
+import { Navbar, Nav, Button } from "react-bootstrap";
+import {
+  BsClockHistory,
+  BsUmbrella,
+  BsCashStack,
+  BsBarChart,
+  BsLockFill,
+} from "react-icons/bs";
+
+function BottomNav({ onMenuSelect }) {
+  const [active, setActive] = useState("attendance");
+
+  const handleSelect = (menu) => {
+    setActive(menu);
+    onMenuSelect(menu);
+  };
+
+  const activeColor = "#007bff"; // 파란 포인트
+  const inactiveColor = "#6c757d";
+
+  const navItems = [
+    { key: "attendance", icon: <BsClockHistory size={22} />, label: "근무조회" },
+    { key: "vacation", icon: <BsUmbrella size={22} />, label: "연차신청" },
+    { key: "expense", icon: <BsCashStack size={22} />, label: "지출신청" },
+    { key: "expenseList", icon: <BsBarChart size={22} />, label: "지출조회" },
+    { key: "admin", icon: <BsLockFill size={22} />, label: "관리자" },
+  ];
+
+  return (
+    <Navbar
+      fixed="bottom"
+      bg="white"
+      className="shadow-lg border-top justify-content-around py-2"
+      style={{
+        height: "80px", // ✅ iPhone 14 Pro Max 하단 안전영역 고려
+        paddingBottom: "env(safe-area-inset-bottom)",
+        borderRadius: "20px 20px 0 0",
+        backdropFilter: "blur(8px)",
+      }}
+    >
+      <Nav
+        className="d-flex justify-content-between align-items-center w-100 px-3"
+        style={{
+          maxWidth: "430px", // ✅ iPhone 14 Pro Max 화면 너비 기준
+          margin: "0 auto",
+        }}
+      >
+        {navItems.map((item) => (
+          <Button
+            key={item.key}
+            variant="link"
+            className="text-center fw-semibold d-flex flex-column align-items-center"
+            style={{
+              flex: 1,
+              color: active === item.key ? activeColor : inactiveColor,
+              whiteSpace: "nowrap",
+              fontSize: "0.8rem",
+              textDecoration: "none",
+              padding: "6px 0",
+            }}
+            onClick={() => handleSelect(item.key)}
+          >
+            {item.icon}
+            <span
+              style={{
+                marginTop: "3px",
+                fontWeight: active === item.key ? "600" : "500",
+              }}
+            >
+              {item.label}
+            </span>
+            {active === item.key && (
+              <div
+                style={{
+                  width: "24px",
+                  height: "3px",
+                  borderRadius: "2px",
+                  backgroundColor: activeColor,
+                  marginTop: "4px",
+                }}
+              />
+            )}
+          </Button>
+        ))}
+      </Nav>
+    </Navbar>
+  );
+}
+
+export default BottomNav;
