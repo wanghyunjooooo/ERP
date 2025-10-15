@@ -3,33 +3,32 @@ const jwt = require("jsonwebtoken");
 const userModel = require("../models/userModel");
 require("dotenv").config();
 
-exports.signup = async (req, res) => {
+exports.addUser = async (req, res) => {
+    if (req.user.user_auth !== "관리자") {
+        return res.status(403).json({ error: "사원 추가 권한이 없습니다" });
+    }
+
     const { user_name, user_email, user_password, user_auth, birthday, join_date, dept_id } = req.body;
 
     if (!user_name || !user_email || !user_password || !user_auth || !birthday || !join_date || !dept_id) {
-        return res.status(400).json({ error: "모든 필드를 입력해주세요." });
+        return res.status(400).json({ error: "모든 필드를 입력해주세요" });
     }
 
     try {
         const existing = await userModel.findUserByEmail(user_email);
-        if (existing) {
-            return res.status(400).json({ error: "이미 존재하는 이메일입니다." });
-        }
+        if (existing) return res.status(400).json({ error: "이미 존재하는 이메일입니다" });
 
         const hashed = await bcrypt.hash(user_password, 10);
 
-        const user = await userModel.createUser(user_name, user_email, hashed, user_auth, birthday, join_date, dept_id);
-
-        const token = jwt.sign({ user_id: user.user_id, user_name: user.user_name, user_auth: user.user_auth }, process.env.JWT_KEY, { expiresIn: "7d" });
+        const newUser = await userModel.createUser(user_name, user_email, hashed, user_auth, birthday, join_date, dept_id);
 
         res.status(201).json({
-            message: "회원가입 성공",
-            user,
-            token,
+            message: "사원이 성공적으로 추가되었습니다",
+            user: newUser,
         });
     } catch (err) {
-        console.error("회원가입 오류:", err);
-        res.status(500).json({ error: "회원가입 실패" });
+        console.error("사원 추가 오류:", err);
+        res.status(500).json({ error: "사원 추가 실패" });
     }
 };
 
@@ -37,15 +36,15 @@ exports.login = async (req, res) => {
     const { user_email, user_password } = req.body;
 
     if (!user_email || !user_password) {
-        return res.status(400).json({ error: "이메일과 비밀번호를 입력해주세요." });
+        return res.status(400).json({ error: "이메일과 비밀번호를 입력해주세요" });
     }
 
     try {
         const user = await userModel.findUserByEmail(user_email);
-        if (!user) return res.status(400).json({ error: "존재하지 않는 사용자입니다." });
+        if (!user) return res.status(400).json({ error: "존재하지 않는 사용자입니다" });
 
         const match = await bcrypt.compare(user_password, user.user_password);
-        if (!match) return res.status(400).json({ error: "비밀번호가 틀렸습니다." });
+        if (!match) return res.status(400).json({ error: "비밀번호가 틀렸습니다" });
 
         const token = jwt.sign({ user_id: user.user_id, user_name: user.user_name, user_auth: user.user_auth }, process.env.JWT_KEY, { expiresIn: "7d" });
 
@@ -73,7 +72,7 @@ exports.getUserById = async (req, res) => {
 
     try {
         const user = await userModel.getUserById(user_id);
-        if (!user) return res.status(404).json({ error: "해당 사원을 찾을 수 없습니다." });
+        if (!user) return res.status(404).json({ error: "해당 사원을 찾을 수 없습니다" });
 
         res.json(user);
     } catch (err) {
@@ -88,18 +87,18 @@ exports.updateUserAuth = async (req, res) => {
 
     if (!user_auth)
         return res.status(400).json({
-            error: "변경할 권한을 입력해주세요.",
+            error: "변경할 권한을 입력해주세요",
         });
 
     try {
         const updated = await userModel.updateUserAuth(user_id, user_auth);
         if (!updated)
             return res.status(404).json({
-                error: "사용자를 찾을 수 없습니다.",
+                error: "사용자를 찾을 수 없습니다",
             });
 
         res.json({
-            message: "권한이 변경되었습니다.",
+            message: "권한이 변경되었습니다",
             updated,
         });
     } catch (err) {
