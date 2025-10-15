@@ -68,13 +68,30 @@ exports.getAllUsers = async (req, res) => {
     }
 };
 
-exports.updateUserAuth = async (user_id, user_auth) => {
-    const result = await pool.query(
-        `UPDATE "User"
-        SET user_auth = $1
-        WHERE user_id = $2
-        RETURNING user_id, user_name, user_email, user_auth`,
-        [user_auth, user_id]
-    );
-    return result.rows[0];
+exports.updateUserAuth = async (req, res) => {
+    const user_id = parseInt(req.params.id);
+    const { user_auth } = req.body;
+
+    if (!user_auth)
+        return res.status(400).json({
+            error: "변경할 권한을 입력해주세요.",
+        });
+
+    try {
+        const updated = await userModel.updateUserAuth(user_id, user_auth);
+        if (!updated)
+            return res.status(404).json({
+                error: "사용자를 찾을 수 없습니다.",
+            });
+
+        res.json({
+            message: "권한이 변경되었습니다.",
+            updated,
+        });
+    } catch (err) {
+        console.error("권한 변경 오류:", err);
+        res.status(500).json({
+            error: "권한 변경 실패",
+        });
+    }
 };
