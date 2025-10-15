@@ -1,7 +1,12 @@
 const pool = require("../config/db");
 
 exports.findAttendByDate = async (user_id, attend_date) => {
-    const result = await pool.query(`SELECT * FROM "Attend" WHERE user_id = $1 AND attend_date = $2`, [user_id, attend_date]);
+    const result = await pool.query(
+        `SELECT * FROM "Attend"
+        WHERE user_id = $1 AND attend_date = $2
+        ORDER BY attend_id DESC LIMIT 1`,
+        [user_id, attend_date]
+    );
     return result.rows[0];
 };
 
@@ -17,19 +22,33 @@ exports.createStartWork = async (user_id, attend_date) => {
     return result.rows[0];
 };
 
-exports.updateEndWork = async (user_id, attend_date) => {
-    const result = await pool.query(
+exports.createEndWork = async (user_id, attend_date) => {
+    const startRes = await pool.query(
         `
-        UPDATE "Attend"
-        SET 
-            end_time = NOW()::time,
-            total_hours = EXTRACT(EPOCH FROM (NOW()::time - start_time)) / 3600,
-            status = '퇴근'
-        WHERE user_id = $1 AND attend_date = $2
-        RETURNING attend_id, user_id, attend_date, start_time, end_time, total_hours, status
+        SELECT start_time FROM "Attend"
+        WHERE user_id = $1 AND attend_date = $2 AND status = '출근'
+        ORDER BY attend_id DESC LIMIT 1
         `,
         [user_id, attend_date]
     );
+
+    const start_time = startRes.rows[0]?.start_time;
+    let total_hours = null;
+
+    if (start_time) {
+        const diff = (new Date(`1970-01-01T${new Date().toISOString().split("T")[1].split(".")[0]}Z`) - new Date(`1970-01-01T${start_time}Z`)) / 3600000;
+        total_hours = Math.max(diff, 0).toFixed(2);
+    }
+
+    const result = await pool.query(
+        `
+        INSERT INTO "Attend" (user_id, attend_date, end_time, total_hours, status, approval_status)
+        VALUES ($1, $2, NOW()::time, $3, '퇴근', '대기')
+        RETURNING attend_id, user_id, attend_date, end_time, total_hours, status, approval_status
+        `,
+        [user_id, attend_date, total_hours]
+    );
+
     return result.rows[0];
 };
 

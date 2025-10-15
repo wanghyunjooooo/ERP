@@ -5,13 +5,8 @@ exports.startWork = async (req, res) => {
     const today = new Date().toISOString().split("T")[0];
 
     try {
-        const existing = await attendModel.findAttendByDate(user_id, today);
-        if (existing) {
-            return res.status(400).json({ error: "이미 출근 기록이 존재합니다" });
-        }
-
         const attend = await attendModel.createStartWork(user_id, today);
-        res.status(201).json({ message: "출근 요청 등록", attend });
+        res.status(201).json({ message: "출근 기록 등록", attend });
     } catch (err) {
         console.error("출근 등록 오류:", err);
         res.status(500).json({ error: "출근 등록 실패" });
@@ -23,17 +18,8 @@ exports.endWork = async (req, res) => {
     const today = new Date().toISOString().split("T")[0];
 
     try {
-        const existing = await attendModel.findAttendByDate(user_id, today);
-        if (!existing) {
-            return res.status(400).json({ error: "출근 기록이 없습니다" });
-        }
-
-        if (existing.end_time) {
-            return res.status(400).json({ error: "이미 퇴근이 완료되었습니다" });
-        }
-
-        const updated = await attendModel.updateEndWork(user_id, today);
-        res.json({ message: "퇴근 요청 등록", attend: updated });
+        const updated = await attendModel.createEndWork(user_id, today);
+        res.status(201).json({ message: "퇴근 기록 등록", attend: updated });
     } catch (err) {
         console.error("퇴근 등록 오류:", err);
         res.status(500).json({ error: "퇴근 등록 실패" });
