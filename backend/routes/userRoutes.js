@@ -7,6 +7,7 @@ router.post("/signup", userController.signup);
 router.post("/login", userController.login);
 
 router.get("/", authMiddleware, userController.getAllUsers);
+router.get("/:id", authMiddleware, userController.getUserById);
 
 router.put("/:id/auth", authMiddleware, userController.updateUserAuth);
 

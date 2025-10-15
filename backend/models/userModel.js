@@ -38,6 +38,28 @@ exports.getAllUsers = async () => {
     return result.rows;
 };
 
+exports.getUserById = async (user_id) => {
+    const result = await pool.query(
+        `
+        SELECT 
+            u.user_id,
+            u.user_name,
+            u.user_email,
+            u.user_auth,
+            u.birthday,
+            u.join_date,
+            d.dept_name,
+            u.created_at
+        FROM "User" u
+        LEFT JOIN "Dept" d ON u.dept_id = d.dept_id
+        WHERE u.user_id = $1
+        `,
+        [user_id]
+    );
+
+    return result.rows[0];
+};
+
 exports.updateUserAuth = async (user_id, user_auth) => {
     const result = await pool.query(
         `UPDATE "User"

@@ -68,6 +68,20 @@ exports.getAllUsers = async (req, res) => {
     }
 };
 
+exports.getUserById = async (req, res) => {
+    const user_id = parseInt(req.params.id);
+
+    try {
+        const user = await userModel.getUserById(user_id);
+        if (!user) return res.status(404).json({ error: "해당 사원을 찾을 수 없습니다." });
+
+        res.json(user);
+    } catch (err) {
+        console.error("사원 개별 조회 오류:", err);
+        res.status(500).json({ error: "사원 조회 실패" });
+    }
+};
+
 exports.updateUserAuth = async (req, res) => {
     const user_id = parseInt(req.params.id);
     const { user_auth } = req.body;
