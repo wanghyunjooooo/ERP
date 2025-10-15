@@ -67,3 +67,14 @@ exports.getAllUsers = async (req, res) => {
         });
     }
 };
+
+exports.updateUserAuth = async (user_id, user_auth) => {
+    const result = await pool.query(
+        `UPDATE "User"
+        SET user_auth = $1
+        WHERE user_id = $2
+        RETURNING user_id, user_name, user_email, user_auth`,
+        [user_auth, user_id]
+    );
+    return result.rows[0];
+};
