@@ -11,6 +11,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
 app.use("/users", require("./routes/userRoutes"));
+app.use("/attend", require("./routes/attendRoutes"));
 
 app.get("/", (req, res) => {
     res.send("Hello Node.js");
