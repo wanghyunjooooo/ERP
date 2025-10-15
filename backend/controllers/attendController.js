@@ -62,6 +62,25 @@ exports.getAttendByUserId = async (req, res) => {
     }
 };
 
+exports.getAllStatus = async (req, res) => {
+    try {
+        if (req.user.user_auth !== "관리자") {
+            return res.status(403).json({ error: "관리자 권한이 필요합니다" });
+        }
+
+        const date = req.query.date || new Date().toISOString().split("T")[0];
+        const status = await attendModel.getAllStatus(date);
+        res.json({
+            date,
+            total: status.length,
+            employees: status,
+        });
+    } catch (err) {
+        console.error("근무 현황 조회 오류:", err);
+        res.status(500).json({ error: "근무 현황 조회 실패" });
+    }
+};
+
 exports.getMonthlySummary = async (req, res) => {
     const user_id = parseInt(req.params.id);
     try {

@@ -8,6 +8,8 @@ router.post("/end", authMiddleware, attendController.endWork);
 
 router.get("/", authMiddleware, attendController.getAllAttends);
 
+router.get("/status", authMiddleware, attendController.getAllStatus);
+
 router.get("/summary/monthly/:id", authMiddleware, attendController.getMonthlySummary);
 router.get("/summary/weekly/:id", authMiddleware, attendController.getWeeklySummary);
 
