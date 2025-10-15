@@ -16,3 +16,25 @@ exports.createAttend = async (req, res) => {
         res.status(500).json({ error: "출퇴근 등록 실패" });
     }
 };
+
+exports.getAllAttends = async (req, res) => {
+    try {
+        const attends = await attendModel.getAllAttends();
+        res.json(attends);
+    } catch (err) {
+        console.error("전체 출퇴근 조회 오류:", err);
+        res.status(500).json({ error: "출퇴근 전체 조회 실패" });
+    }
+};
+
+exports.getAttendByUserId = async (req, res) => {
+    const user_id = parseInt(req.params.id);
+    try {
+        const attends = await attendModel.getAttendByUserId(user_id);
+        if (attends.length === 0) return res.status(404).json({ error: "출퇴근 내역이 없습니다" });
+        res.json(attends);
+    } catch (err) {
+        console.error("개별 출퇴근 조회 오류:", err);
+        res.status(500).json({ error: "출퇴근 내역 조회 실패" });
+    }
+};
