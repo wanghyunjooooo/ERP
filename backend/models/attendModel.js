@@ -53,3 +53,20 @@ exports.getAttendByUserId = async (user_id) => {
     );
     return result.rows;
 };
+
+exports.getMonthlySummary = async (user_id) => {
+    const result = await pool.query(
+        `
+        SELECT 
+            DATE_TRUNC('month', attend_date) AS month,
+            SUM(total_hours) AS total_hours
+        FROM "Attend"
+        WHERE user_id = $1 AND approval_status = '승인'
+        GROUP BY month
+        ORDER BY month DESC
+        LIMIT 1;
+    `,
+        [user_id]
+    );
+    return result.rows[0] || { total_hours: 0 };
+};

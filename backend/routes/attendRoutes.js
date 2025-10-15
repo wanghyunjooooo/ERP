@@ -9,4 +9,6 @@ router.get("/", authMiddleware, attendController.getAllAttends);
 
 router.get("/:id", authMiddleware, attendController.getAttendByUserId);
 
+router.get("/summary/monthly/:id", authMiddleware, attendController.getMonthlySummary);
+
 module.exports = router;
