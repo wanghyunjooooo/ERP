@@ -55,3 +55,15 @@ exports.login = async (req, res) => {
         res.status(500).json({ error: "로그인 실패" });
     }
 };
+
+exports.getAllUsers = async (req, res) => {
+    try {
+        const users = await userModel.getAllUsers();
+        res.json(users);
+    } catch (err) {
+        console.error("사원 조회 오류:", err);
+        res.status(500).json({
+            error: "사원 조회 실패",
+        });
+    }
+};

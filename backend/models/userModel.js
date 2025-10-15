@@ -19,3 +19,21 @@ exports.findUserByEmail = async (user_email) => {
     );
     return result.rows[0];
 };
+
+exports.getAllUsers = async () => {
+    const result = await pool.query(`
+        SELECT 
+            u.user_id,
+            u.user_name,
+            u.user_email,
+            u.user_auth,
+            u.birthday,
+            u.join_date,
+            d.dept_name,
+            u.created_at
+        FROM "User" u
+        LEFT JOIN "Dept" d ON u.dept_id = d.dept_id
+        ORDER BY u.user_id ASC
+    `);
+    return result.rows;
+};
