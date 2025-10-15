@@ -37,9 +37,14 @@ function Login() {
       const data = await res.json();
       if (res.ok) {
         alert("로그인 성공!");
+
+        // ✅ 토큰과 사용자 정보 저장
         localStorage.setItem("token", data.token);
         localStorage.setItem("user", JSON.stringify(data.user));
-        navigate("/");
+
+    
+          navigate("/home");
+        
       } else {
         alert(data.error || "로그인 실패");
       }
@@ -117,17 +122,7 @@ function Login() {
           </Button>
         </Form>
 
-        <div className="text-center mt-4">
-          <p className="text-muted mb-1">아직 회원이 아니신가요?</p>
-          <Button
-            variant="link"
-            className="p-0 fw-semibold"
-            style={{ color: "#4e73df", textDecoration: "none" }}
-            onClick={() => navigate("/signup")}
-          >
-            회원가입하기
-          </Button>
-        </div>
+        
       </Card>
     </div>
   );

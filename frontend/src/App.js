@@ -3,7 +3,7 @@ import {
   BrowserRouter as Router,
   Routes,
   Route,
-  Navigate, // ✅ 추가
+  Navigate,
   useNavigate,
   useLocation,
 } from "react-router-dom";
@@ -11,12 +11,11 @@ import AttendancePage from "./pages/AttendancePage";
 import VacationPage from "./pages/VacationPage";
 import ExpensePage from "./pages/ExpensePage";
 import ExpenseListPage from "./pages/ExpenseListPage";
-import AdminPage from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
 import Nav from "./components/Nav";
 import HomePage from "./pages/Home";
 import Login from "./pages/Login";
-import SignUp from "./pages/Signup";
+
 
 function App() {
   return (
@@ -48,7 +47,7 @@ function MainLayout() {
         navigate("/admin");
         break;
       default:
-        navigate("/");
+        navigate("/home"); // ✅ 기본 홈으로 이동하도록 변경
     }
   };
 
@@ -59,22 +58,24 @@ function MainLayout() {
   return (
     <>
       <Routes>
-        {/* ✅ 기본 경로('/')로 접속하면 자동으로 /login으로 리다이렉트 */}
+        {/* ✅ '/' 접속 시 로그인 페이지로 이동 */}
         <Route path="/" element={<Navigate to="/login" replace />} />
 
-        {/* 로그인 / 회원가입 */}
+        {/* ✅ 로그인 / 회원가입 */}
         <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<SignUp />} />
+      
 
-        {/* 일반 페이지 */}
+        {/* ✅ 로그인 성공 후 홈 */}
+        <Route path="/home" element={<HomePage />} />
+
+        {/* ✅ 일반 페이지 */}
         <Route path="/attendance" element={<AttendancePage />} />
         <Route path="/vacation" element={<VacationPage />} />
         <Route path="/expense" element={<ExpensePage />} />
         <Route path="/expense-list" element={<ExpenseListPage />} />
-        <Route path="/admin" element={<AdminPage />} />
         <Route path="/admin/dashboard" element={<AdminDashboard />} />
 
-        {/* 혹시 존재하지 않는 경로 → 로그인으로 이동 */}
+        {/* ✅ 존재하지 않는 경로 → 로그인으로 이동 */}
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
 
