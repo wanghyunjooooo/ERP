@@ -11,7 +11,7 @@ exports.startWork = async (req, res) => {
         }
 
         const attend = await attendModel.createStartWork(user_id, today);
-        res.status(201).json({ message: "출근이 등록되었습니다", attend });
+        res.status(201).json({ message: "출근 요청 등록", attend });
     } catch (err) {
         console.error("출근 등록 오류:", err);
         res.status(500).json({ error: "출근 등록 실패" });
@@ -33,7 +33,7 @@ exports.endWork = async (req, res) => {
         }
 
         const updated = await attendModel.updateEndWork(user_id, today);
-        res.json({ message: "퇴근이 등록되었습니다", attend: updated });
+        res.json({ message: "퇴근 요청 등록", attend: updated });
     } catch (err) {
         console.error("퇴근 등록 오류:", err);
         res.status(500).json({ error: "퇴근 등록 실패" });
