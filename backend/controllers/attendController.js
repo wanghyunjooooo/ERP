@@ -81,6 +81,28 @@ exports.getAllStatus = async (req, res) => {
     }
 };
 
+exports.getStatusByUserId = async (req, res) => {
+    const user_id = parseInt(req.params.id);
+
+    try {
+        if (req.user.user_auth !== "관리자" && req.user.user_id !== user_id) {
+            return res.status(403).json({ error: "본인 또는 관리자만 조회할 수 있습니다" });
+        }
+
+        const date = req.query.date || new Date().toISOString().split("T")[0]; // 기본값: 오늘
+        const status = await attendModel.getStatusByUserId(user_id, date);
+
+        if (!status) {
+            return res.status(404).json({ error: "해당 날짜의 근무 기록이 없습니다" });
+        }
+
+        res.json(status);
+    } catch (err) {
+        console.error("개인 근무 현황 조회 오류:", err);
+        res.status(500).json({ error: "개인 근무 현황 조회 실패" });
+    }
+};
+
 exports.getMonthlySummary = async (req, res) => {
     const user_id = parseInt(req.params.id);
     try {
