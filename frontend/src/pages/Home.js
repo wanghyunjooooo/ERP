@@ -1,20 +1,17 @@
 import React, { useState, useEffect } from "react";
-import { Button, Card, Container, Row, Col, ProgressBar, Navbar, Nav } from "react-bootstrap";
+import axios from "axios";
+import { Button, Card, Container, Row, Col, ProgressBar, Navbar } from "react-bootstrap";
 import BottomNav from "../components/Nav";
 
 function Home() {
   const [isWorking, setIsWorking] = useState(false);
   const [today, setToday] = useState("");
+  const [user, setUser] = useState(null); // ✅ 로그인한 사원 정보
   const [totalHours, setTotalHours] = useState(120);
   const maxHours = 160;
 
-    const handleMenuSelect = (menu) => {
-    console.log("선택된 메뉴:", menu);
-    // 나중에 여기에 라우팅 (페이지 이동) 넣을 수 있음
-  };
-
-
   useEffect(() => {
+    // 오늘 날짜 설정
     const now = new Date();
     const formatted = now.toLocaleDateString("ko-KR", {
       year: "numeric",
@@ -23,6 +20,31 @@ function Home() {
       weekday: "long",
     });
     setToday(formatted);
+  }, []);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    const storedUser = JSON.parse(localStorage.getItem("user"));
+    const userId = storedUser?.user_id; // ✅ DB 스키마 기준으로 user_id 사용
+
+    if (!token || !userId) {
+      console.error("토큰 또는 사용자 정보가 없습니다.");
+      return;
+    }
+
+    const fetchUser = async () => {
+      try {
+        const res = await axios.get(`http://localhost:3000/users/${userId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setUser(res.data); // ✅ 사원 데이터 저장
+        console.log("개별 사원 정보:", res.data);
+      } catch (err) {
+        console.error("사원 조회 실패:", err);
+      }
+    };
+
+    fetchUser();
   }, []);
 
   const handleWorkToggle = () => {
@@ -41,15 +63,15 @@ function Home() {
         className="shadow-sm"
       >
         <Container className="justify-content-center">
-          <Navbar.Brand className="text-white fw-bold fs-5 mb-0">
-            ERP
-          </Navbar.Brand>
+          <Navbar.Brand className="text-white fw-bold fs-5 mb-0">ERP</Navbar.Brand>
         </Container>
       </Navbar>
 
       {/* 메인 콘텐츠 */}
       <Container className="pt-5 mt-4">
-        <h5 className="fw-bold mt-3 mb-2 text-center">안녕하세요 👋</h5>
+        <h5 className="fw-bold mt-3 mb-2 text-center">
+          {user ? `${user.user_name}님 안녕하세요 👋` : "안녕하세요 👋"}
+        </h5>
         <p className="text-muted text-center mb-4">{today}</p>
 
         {/* 출근/퇴근 카드 */}
@@ -96,30 +118,20 @@ function Home() {
           </Row>
         </Card>
 
-        {/* 승인 내역 카드형 리스트 */}
-        <Card className="shadow-sm p-3 rounded-4 border-0">
-          <Card.Title className="fw-semibold mb-3 text-center">승인 내역</Card.Title>
-
-          <div className="d-flex flex-column gap-3">
-            <Card className="p-3 border-0 shadow-sm rounded-3">
-              <p className="fw-semibold mb-1">연차 신청</p>
-              <p className="text-muted small mb-1">2025-10-10</p>
-              <span className="badge bg-success">승인됨</span>
-              <p className="small mt-2 mb-0 text-secondary">정상 승인 처리</p>
-            </Card>
-
-            <Card className="p-3 border-0 shadow-sm rounded-3">
-              <p className="fw-semibold mb-1">지출 신청</p>
-              <p className="text-muted small mb-1">2025-10-12</p>
-              <span className="badge bg-warning text-dark">대기 중</span>
-              <p className="small mt-2 mb-0 text-secondary">관리자 검토 중</p>
-            </Card>
-          </div>
-        </Card>
+        {/* 내 정보 카드 */}
+        {user && (
+          <Card className="shadow-sm p-3 rounded-4 border-0 mb-4">
+            <Card.Title className="fw-semibold mb-3 text-center">내 정보</Card.Title>
+            <p><strong>이름:</strong> {user.user_name}</p>
+            <p><strong>이메일:</strong> {user.user_email}</p>
+            <p><strong>권한:</strong> {user.user_auth}</p>
+            <p><strong>입사일:</strong> {new Date(user.join_date).toLocaleDateString()}</p>
+          </Card>
+        )}
       </Container>
 
       {/* 하단 탭바 */}
-        <BottomNav onMenuSelect={handleMenuSelect} />
+      <BottomNav />
     </div>
   );
 }
