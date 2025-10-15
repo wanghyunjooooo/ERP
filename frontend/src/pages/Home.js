@@ -6,12 +6,13 @@ import BottomNav from "../components/Nav";
 function Home() {
   const [isWorking, setIsWorking] = useState(false);
   const [today, setToday] = useState("");
-  const [user, setUser] = useState(null); // ✅ 로그인한 사원 정보
+  const [user, setUser] = useState(null);
   const [totalHours, setTotalHours] = useState(120);
   const maxHours = 160;
+  const [attendId, setAttendId] = useState(null); // ✅ 오늘 출근한 기록 ID 저장
 
+  // 오늘 날짜 포맷
   useEffect(() => {
-    // 오늘 날짜 설정
     const now = new Date();
     const formatted = now.toLocaleDateString("ko-KR", {
       year: "numeric",
@@ -22,10 +23,11 @@ function Home() {
     setToday(formatted);
   }, []);
 
+  // 사용자 정보 조회
   useEffect(() => {
     const token = localStorage.getItem("token");
     const storedUser = JSON.parse(localStorage.getItem("user"));
-    const userId = storedUser?.user_id; // ✅ DB 스키마 기준으로 user_id 사용
+    const userId = storedUser?.user_id;
 
     if (!token || !userId) {
       console.error("토큰 또는 사용자 정보가 없습니다.");
@@ -37,18 +39,87 @@ function Home() {
         const res = await axios.get(`http://localhost:3000/users/${userId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        setUser(res.data); // ✅ 사원 데이터 저장
-        console.log("개별 사원 정보:", res.data);
+        setUser(res.data);
+        console.log("✅ 개별 사원 정보:", res.data);
       } catch (err) {
-        console.error("사원 조회 실패:", err);
+        console.error("❌ 사원 조회 실패:", err);
       }
     };
 
     fetchUser();
   }, []);
 
-  const handleWorkToggle = () => {
-    setIsWorking(!isWorking);
+  // 오늘 출근 기록 확인
+  useEffect(() => {
+    if (!user) return;
+    const token = localStorage.getItem("token");
+
+    const checkTodayAttend = async () => {
+      try {
+        const res = await axios.get(`http://localhost:3000/attend/${user.user_id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        // 오늘 날짜의 출근 기록이 있는지 확인
+        const todayStr = new Date().toISOString().split("T")[0];
+        const todayAttend = res.data.find(a => a.attend_date.startsWith(todayStr));
+
+        if (todayAttend) {
+          setIsWorking(!todayAttend.end_time); // end_time이 없으면 근무중
+          setAttendId(todayAttend.attend_id);
+        }
+      } catch (err) {
+        console.log("출퇴근 데이터 없음 (정상)", err);
+      }
+    };
+
+    checkTodayAttend();
+  }, [user]);
+
+  // 출퇴근 버튼 클릭
+  const handleWorkToggle = async () => {
+    if (!user) return;
+    const token = localStorage.getItem("token");
+    const now = new Date();
+    const attend_date = now.toISOString().split("T")[0];
+    const timeStr = now.toTimeString().split(" ")[0];
+
+    try {
+      if (!isWorking) {
+        // ✅ 출근하기
+        const res = await axios.post(
+          "http://localhost:3000/attend",
+          {
+            attend_date,
+            start_time: timeStr,
+            status: "근무중",
+          },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        console.log("✅ 출근 등록 완료:", res.data);
+        setAttendId(res.data.attend.attend_id);
+        setIsWorking(true);
+      } else {
+        // ✅ 퇴근하기
+        if (!attendId) {
+          console.error("출근 기록이 없습니다.");
+          return;
+        }
+        const res = await axios.put(
+          `http://localhost:3000/attend/${attendId}`,
+          {
+            end_time: timeStr,
+            status: "퇴근",
+          },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        console.log("✅ 퇴근 등록 완료:", res.data);
+        setIsWorking(false);
+      }
+    } catch (err) {
+      console.error("❌ 출퇴근 처리 실패:", err);
+      alert("출퇴근 처리 중 오류가 발생했습니다.");
+    }
   };
 
   return (
