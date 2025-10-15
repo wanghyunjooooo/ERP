@@ -89,7 +89,7 @@ exports.getStatusByUserId = async (req, res) => {
             return res.status(403).json({ error: "본인 또는 관리자만 조회할 수 있습니다" });
         }
 
-        const date = req.query.date || new Date().toISOString().split("T")[0]; // 기본값: 오늘
+        const date = req.query.date || new Date().toISOString().split("T")[0];
         const status = await attendModel.getStatusByUserId(user_id, date);
 
         if (!status) {
