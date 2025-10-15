@@ -19,7 +19,7 @@ function Header({ title }) {
       }}
     >
       <div
-        onClick={() => navigate("/")}
+        onClick={() => navigate("/home")}
         style={{
           cursor: "pointer",
           display: "flex",

@@ -42,12 +42,9 @@ function Login() {
         localStorage.setItem("token", data.token);
         localStorage.setItem("user", JSON.stringify(data.user));
 
-        // ✅ 권한에 따라 다른 페이지로 이동
-        if (data.user.user_auth === "관리자") {
-          navigate("/admin/dashboard");
-        } else {
+    
           navigate("/home");
-        }
+        
       } else {
         alert(data.error || "로그인 실패");
       }

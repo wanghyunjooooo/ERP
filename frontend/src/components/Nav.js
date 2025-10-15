@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Navbar, Nav, Button } from "react-bootstrap";
 import {
   BsClockHistory,
@@ -7,11 +7,21 @@ import {
   BsBarChart,
   BsLockFill,
 } from "react-icons/bs";
-import { useNavigate } from "react-router-dom"; // ✅ 추가
+import { useNavigate } from "react-router-dom";
 
 function BottomNav({ onMenuSelect }) {
   const [active, setActive] = useState("attendance");
-  const navigate = useNavigate(); // ✅ 페이지 이동용
+  const [isAdmin, setIsAdmin] = useState(false);
+  const navigate = useNavigate();
+
+  // ✅ 로그인한 사용자 권한 확인
+  useEffect(() => {
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      const user = JSON.parse(storedUser);
+      setIsAdmin(user.user_auth === "관리자");
+    }
+  }, []);
 
   const handleSelect = (menu) => {
     setActive(menu);
@@ -22,7 +32,6 @@ function BottomNav({ onMenuSelect }) {
       return;
     }
 
-    // ✅ 다른 메뉴는 기존처럼 부모 콜백 실행
     if (typeof onMenuSelect === "function") {
       onMenuSelect(menu);
     }
@@ -31,12 +40,15 @@ function BottomNav({ onMenuSelect }) {
   const activeColor = "#007bff";
   const inactiveColor = "#6c757d";
 
+  // ✅ 관리자 여부에 따라 메뉴 구성
   const navItems = [
     { key: "attendance", icon: <BsClockHistory size={22} />, label: "근무조회" },
     { key: "vacation", icon: <BsUmbrella size={22} />, label: "연차신청" },
     { key: "expense", icon: <BsCashStack size={22} />, label: "지출신청" },
     { key: "expenseList", icon: <BsBarChart size={22} />, label: "지출조회" },
-    { key: "admin", icon: <BsLockFill size={22} />, label: "관리자" },
+    ...(isAdmin
+      ? [{ key: "admin", icon: <BsLockFill size={22} />, label: "관리자" }]
+      : []),
   ];
 
   return (
