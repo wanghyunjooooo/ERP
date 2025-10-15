@@ -3,6 +3,7 @@ import {
   BrowserRouter as Router,
   Routes,
   Route,
+  Navigate, // ✅ 추가
   useNavigate,
   useLocation,
 } from "react-router-dom";
@@ -58,16 +59,23 @@ function MainLayout() {
   return (
     <>
       <Routes>
+        {/* ✅ 기본 경로('/')로 접속하면 자동으로 /login으로 리다이렉트 */}
+        <Route path="/" element={<Navigate to="/login" replace />} />
+
+        {/* 로그인 / 회원가입 */}
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<SignUp />} />
 
-        <Route path="/" element={<HomePage />} />
+        {/* 일반 페이지 */}
         <Route path="/attendance" element={<AttendancePage />} />
         <Route path="/vacation" element={<VacationPage />} />
         <Route path="/expense" element={<ExpensePage />} />
         <Route path="/expense-list" element={<ExpenseListPage />} />
         <Route path="/admin" element={<AdminPage />} />
         <Route path="/admin/dashboard" element={<AdminDashboard />} />
+
+        {/* 혹시 존재하지 않는 경로 → 로그인으로 이동 */}
+        <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
 
       {/* ✅ Nav는 로그인/회원가입 화면이 아닐 때만 표시 */}

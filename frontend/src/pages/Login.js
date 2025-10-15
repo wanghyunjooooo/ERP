@@ -1,4 +1,3 @@
-// src/pages/Login.js
 import React, { useState, useEffect } from "react";
 import { Form, Button, Card } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
@@ -15,15 +14,38 @@ function Login() {
     };
   }, []);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (email && password) {
-      alert("로그인 성공!");
-      localStorage.setItem("isLoggedIn", "true");
-      navigate("/");
-    } else {
+    if (!email || !password) {
       alert("이메일과 비밀번호를 입력하세요.");
+      return;
+    }
+
+    try {
+      const res = await fetch("http://localhost:3000/users/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          user_email: email,
+          user_password: password,
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        alert("로그인 성공!");
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("user", JSON.stringify(data.user));
+        navigate("/");
+      } else {
+        alert(data.error || "로그인 실패");
+      }
+    } catch (err) {
+      console.error("로그인 오류:", err);
+      alert("서버 오류가 발생했습니다.");
     }
   };
 

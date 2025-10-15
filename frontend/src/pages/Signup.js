@@ -4,15 +4,14 @@ import { useNavigate } from "react-router-dom";
 
 function SignUp() {
   const [formData, setFormData] = useState({
+    name: "",
     email: "",
     password: "",
     confirm: "",
-    name: "",
   });
 
   const navigate = useNavigate();
 
-  // body 스크롤, 여백 제거
   useEffect(() => {
     document.body.style.margin = "0";
     document.body.style.padding = "0";
@@ -25,16 +24,13 @@ function SignUp() {
   }, []);
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!formData.email || !formData.password || !formData.name) {
+    if (!formData.name || !formData.email || !formData.password || !formData.confirm) {
       alert("모든 필드를 입력해주세요.");
       return;
     }
@@ -43,8 +39,34 @@ function SignUp() {
       return;
     }
 
-    alert("회원가입 성공!");
-    navigate("/login");
+    try {
+      const res = await fetch("http://localhost:3000/users/signup", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          user_name: formData.name,
+          user_email: formData.email,
+          user_password: formData.password,
+          user_auth: "user", // 기본 권한
+          birthday: "2000-01-01", // 기본값 (필요시 date picker 추가)
+          join_date: new Date().toISOString().split("T")[0], // 오늘 날짜
+          dept_id: 1, // 기본 부서 ID (테스트용)
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        alert("회원가입 성공!");
+        navigate("/login");
+      } else {
+        alert(data.error || "회원가입 실패");
+      }
+    } catch (err) {
+      console.error("회원가입 오류:", err);
+      alert("서버 오류가 발생했습니다.");
+    }
   };
 
   return (
@@ -58,11 +80,7 @@ function SignUp() {
     >
       <Card
         className="shadow-lg p-4 w-100"
-        style={{
-          maxWidth: "380px",
-          borderRadius: "25px",
-          background: "white",
-        }}
+        style={{ maxWidth: "380px", borderRadius: "25px", background: "white" }}
       >
         <div className="text-center mb-4">
           <img
@@ -79,8 +97,8 @@ function SignUp() {
             <Form.Label>이름</Form.Label>
             <Form.Control
               type="text"
-              placeholder="이름을 입력하세요"
               name="name"
+              placeholder="이름을 입력하세요"
               value={formData.name}
               onChange={handleChange}
               className="rounded-3 py-2"
@@ -91,8 +109,8 @@ function SignUp() {
             <Form.Label>이메일</Form.Label>
             <Form.Control
               type="email"
-              placeholder="이메일을 입력하세요"
               name="email"
+              placeholder="이메일을 입력하세요"
               value={formData.email}
               onChange={handleChange}
               className="rounded-3 py-2"
@@ -103,8 +121,8 @@ function SignUp() {
             <Form.Label>비밀번호</Form.Label>
             <Form.Control
               type="password"
-              placeholder="비밀번호를 입력하세요"
               name="password"
+              placeholder="비밀번호를 입력하세요"
               value={formData.password}
               onChange={handleChange}
               className="rounded-3 py-2"
@@ -115,8 +133,8 @@ function SignUp() {
             <Form.Label>비밀번호 확인</Form.Label>
             <Form.Control
               type="password"
-              placeholder="비밀번호를 다시 입력하세요"
               name="confirm"
+              placeholder="비밀번호를 다시 입력하세요"
               value={formData.confirm}
               onChange={handleChange}
               className="rounded-3 py-2"
