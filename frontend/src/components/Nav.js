@@ -7,19 +7,28 @@ import {
   BsBarChart,
   BsLockFill,
 } from "react-icons/bs";
+import { useNavigate } from "react-router-dom"; // ✅ 추가
 
 function BottomNav({ onMenuSelect }) {
   const [active, setActive] = useState("attendance");
+  const navigate = useNavigate(); // ✅ 페이지 이동용
 
   const handleSelect = (menu) => {
     setActive(menu);
-    // ✅ onMenuSelect가 함수일 때만 호출
+
+    if (menu === "admin") {
+      // ✅ 관리자 클릭 시 대시보드로 이동
+      navigate("/admin/dashboard");
+      return;
+    }
+
+    // ✅ 다른 메뉴는 기존처럼 부모 콜백 실행
     if (typeof onMenuSelect === "function") {
       onMenuSelect(menu);
     }
   };
 
-  const activeColor = "#007bff"; // 파란 포인트
+  const activeColor = "#007bff";
   const inactiveColor = "#6c757d";
 
   const navItems = [
