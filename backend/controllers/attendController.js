@@ -1,19 +1,42 @@
 const attendModel = require("../models/attendModel");
 
-exports.createAttend = async (req, res) => {
+exports.startWork = async (req, res) => {
     const user_id = req.user.user_id;
-    const { attend_date, start_time, end_time, status } = req.body;
-
-    if (!attend_date) {
-        return res.status(400).json({ error: "attend_date는 필수입니다" });
-    }
+    const today = new Date().toISOString().split("T")[0];
 
     try {
-        const attend = await attendModel.createAttend(user_id, attend_date, start_time, end_time, status);
-        res.status(201).json({ message: "출퇴근 요청 등록", attend });
+        const existing = await attendModel.findAttendByDate(user_id, today);
+        if (existing) {
+            return res.status(400).json({ error: "이미 출근 기록이 존재합니다" });
+        }
+
+        const attend = await attendModel.createStartWork(user_id, today);
+        res.status(201).json({ message: "출근이 등록되었습니다", attend });
     } catch (err) {
-        console.error("출퇴근 등록 오류:", err);
-        res.status(500).json({ error: "출퇴근 등록 실패" });
+        console.error("출근 등록 오류:", err);
+        res.status(500).json({ error: "출근 등록 실패" });
+    }
+};
+
+exports.endWork = async (req, res) => {
+    const user_id = req.user.user_id;
+    const today = new Date().toISOString().split("T")[0];
+
+    try {
+        const existing = await attendModel.findAttendByDate(user_id, today);
+        if (!existing) {
+            return res.status(400).json({ error: "출근 기록이 없습니다" });
+        }
+
+        if (existing.end_time) {
+            return res.status(400).json({ error: "이미 퇴근이 완료되었습니다" });
+        }
+
+        const updated = await attendModel.updateEndWork(user_id, today);
+        res.json({ message: "퇴근이 등록되었습니다", attend: updated });
+    } catch (err) {
+        console.error("퇴근 등록 오류:", err);
+        res.status(500).json({ error: "퇴근 등록 실패" });
     }
 };
 

@@ -1,19 +1,34 @@
 const pool = require("../config/db");
 
-exports.createAttend = async (user_id, attend_date, start_time, end_time, status = "근무") => {
-    let total_hours = null;
-    if (start_time && end_time) {
-        const diff = (new Date(`1970-01-01T${end_time}Z`) - new Date(`1970-01-01T${start_time}Z`)) / 3600000;
-        total_hours = parseFloat(diff.toFixed(2));
-    }
+exports.findAttendByDate = async (user_id, attend_date) => {
+    const result = await pool.query(`SELECT * FROM "Attend" WHERE user_id = $1 AND attend_date = $2`, [user_id, attend_date]);
+    return result.rows[0];
+};
 
+exports.createStartWork = async (user_id, attend_date) => {
     const result = await pool.query(
         `
-        INSERT INTO "Attend" (user_id, attend_date, start_time, end_time, total_hours, status, approval_status)
-        VALUES ($1, $2, $3, $4, $5, $6, '대기')
-        RETURNING attend_id, user_id, attend_date, start_time, end_time, total_hours, status, approval_status
+        INSERT INTO "Attend" (user_id, attend_date, start_time, status, approval_status)
+        VALUES ($1, $2, NOW()::time, '근무중', '대기')
+        RETURNING attend_id, user_id, attend_date, start_time, status, approval_status
         `,
-        [user_id, attend_date, start_time, end_time, total_hours, status]
+        [user_id, attend_date]
+    );
+    return result.rows[0];
+};
+
+exports.updateEndWork = async (user_id, attend_date) => {
+    const result = await pool.query(
+        `
+        UPDATE "Attend"
+        SET 
+            end_time = NOW()::time,
+            total_hours = EXTRACT(EPOCH FROM (NOW()::time - start_time)) / 3600,
+            status = '퇴근'
+        WHERE user_id = $1 AND attend_date = $2
+        RETURNING attend_id, user_id, attend_date, start_time, end_time, total_hours, status
+        `,
+        [user_id, attend_date]
     );
     return result.rows[0];
 };
