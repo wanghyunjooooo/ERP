@@ -31,3 +31,15 @@ exports.updateAttendApproval = async (attend_id, approved_by, approval_status) =
         client.release();
     }
 };
+
+exports.updateLeaveApproval = async (leave_id, approved_by, approval_status) => {
+    const result = await pool.query(
+        `UPDATE "Leave"
+        SET approval_status = $1,
+            approved_by = $2
+        WHERE leave_id = $3
+        RETURNING leave_id, user_id, approval_status, approved_by`,
+        [approval_status, approved_by, leave_id]
+    );
+    return result.rows[0];
+};
