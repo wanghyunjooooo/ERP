@@ -5,4 +5,6 @@ const authMiddleware = require("../middleware/auth");
 
 router.post("/", authMiddleware, leaveController.createLeave);
 
+router.get("/", authMiddleware, leaveController.getAllLeaves);
+
 module.exports = router;

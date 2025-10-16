@@ -16,3 +16,13 @@ exports.createLeave = async (req, res) => {
         res.status(500).json({ error: "연차 신청 실패" });
     }
 };
+
+exports.getAllLeaves = async (req, res) => {
+    try {
+        const leaves = await leaveModel.getAllLeaves();
+        res.json(leaves);
+    } catch (err) {
+        console.error("전체 연차 조회 오류:", err);
+        res.status(500).json({ error: "전체 연차 조회 실패" });
+    }
+};

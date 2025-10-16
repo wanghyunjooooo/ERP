@@ -11,3 +11,26 @@ exports.createLeave = async (user_id, start_date, end_date, reason, leave_type) 
     );
     return result.rows[0];
 };
+
+exports.getAllLeaves = async () => {
+    const result = await pool.query(`
+        SELECT 
+            l.leave_id,
+            l.user_id,
+            u.user_name,
+            u.user_email,
+            d.dept_name,
+            l.start_date,
+            l.end_date,
+            l.reason,
+            l.leave_type,
+            l.approval_status,
+            l.applied_at,
+            l.approved_by
+        FROM "Leave" l
+        JOIN "User" u ON l.user_id = u.user_id
+        LEFT JOIN "Dept" d ON u.dept_id = d.dept_id
+        ORDER BY l.applied_at DESC
+    `);
+    return result.rows;
+};
