@@ -10,7 +10,7 @@ const ExpenseListPage = () => {
   useEffect(() => {
     const fetchExpenses = async () => {
       const token = localStorage.getItem("token");
-      const url = "http://localhost:3000/expense"; // ✅ 백엔드 주소 (포트 3000)
+      const url = "http://localhost:3000/expense"; // ✅ 백엔드 주소
 
       console.log("📡 [FETCH START] 지출내역 요청 시작");
 
@@ -99,7 +99,8 @@ const ExpenseListPage = () => {
                       bg={
                         exp.approval_status === "승인"
                           ? "success"
-                          : exp.approval_status === "반려"
+                          : exp.approval_status === "반려" ||
+                            exp.approval_status === "거절"
                           ? "danger"
                           : "secondary"
                       }
