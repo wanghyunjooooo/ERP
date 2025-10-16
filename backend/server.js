@@ -15,6 +15,7 @@ app.use("/admin", require("./routes/adminRoutes"));
 app.use("/attend", require("./routes/attendRoutes"));
 app.use("/leave", require("./routes/leaveRoutes"));
 app.use("/expense", require("./routes/expenseRoutes"));
+app.use("/log", require("./routes/logRoutes"));
 
 app.get("/", (req, res) => {
     res.send("Hello Node.js");

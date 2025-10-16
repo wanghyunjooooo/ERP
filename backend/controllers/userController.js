@@ -1,6 +1,7 @@
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const userModel = require("../models/userModel");
+const logModel = require("../models/logModel");
 require("dotenv").config();
 
 exports.addUser = async (req, res) => {
@@ -48,7 +49,13 @@ exports.login = async (req, res) => {
 
         const token = jwt.sign({ user_id: user.user_id, user_name: user.user_name, user_auth: user.user_auth }, process.env.JWT_KEY, { expiresIn: "7d" });
 
-        res.json({ message: "로그인 성공", user, token });
+        await logModel.createLoginLog(user.user_id, req.ip);
+
+        res.json({
+            message: "로그인 성공",
+            user,
+            token,
+        });
     } catch (err) {
         console.error("로그인 오류:", err);
         res.status(500).json({ error: "로그인 실패" });
