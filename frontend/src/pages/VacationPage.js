@@ -182,6 +182,7 @@ function VacationPage({ onMenuSelect }) {
                 <Form.Label>시작일</Form.Label>
                 <Form.Control
                   type="date"
+                  min={new Date().toISOString().split("T")[0]} 
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
                   disabled={loading}
