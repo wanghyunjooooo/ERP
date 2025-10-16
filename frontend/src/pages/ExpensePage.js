@@ -15,19 +15,7 @@ function ExpensePage({ onMenuSelect }) {
   const [loading, setLoading] = useState(false);
   const [departments, setDepartments] = useState([]);
 
-  // ✅ (선택사항) 부서 목록을 서버에서 가져오는 경우
-  useEffect(() => {
-    const fetchDepartments = async () => {
-      try {
-        const res = await axios.get("http://localhost:3000/admin/departments");
-        setDepartments(res.data);
-      } catch (err) {
-        console.error("부서 목록 불러오기 실패:", err);
-      }
-    };
-    fetchDepartments();
-  }, []);
-
+  
   const handleSubmit = async (e) => {
     e.preventDefault();
 
