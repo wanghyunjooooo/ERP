@@ -1,0 +1,18 @@
+const expenseModel = require("../models/expenseModel");
+
+exports.createExpense = async (req, res) => {
+    const user_id = req.user.user_id;
+    const { amount, category, description, dept_id } = req.body;
+
+    if (!amount || !dept_id) {
+        return res.status(400).json({ error: "금액(amount)과 부서(dept_id)는 필수입니다" });
+    }
+
+    try {
+        const expense = await expenseModel.createExpense(user_id, dept_id, amount, category, description);
+        res.status(201).json({ message: "지출 신청이 완료되었습니다", expense });
+    } catch (err) {
+        console.error("지출 신청 오류:", err);
+        res.status(500).json({ error: "지출 신청 실패" });
+    }
+};
