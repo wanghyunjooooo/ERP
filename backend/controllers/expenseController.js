@@ -22,6 +22,7 @@ exports.createExpense = async (req, res) => {
 exports.getAllExpenses = async (req, res) => {
     try {
         const expenses = await expenseModel.getAllExpenses();
+        if (expenses.length === 0) return res.status(404).json({ error: "지출 내역이 없습니다" });
         res.json(expenses);
     } catch (err) {
         console.error("전체 지출 조회 오류:", err);
