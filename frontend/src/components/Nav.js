@@ -14,7 +14,6 @@ function BottomNav({ onMenuSelect }) {
   const [isAdmin, setIsAdmin] = useState(false);
   const navigate = useNavigate();
 
-  // ✅ 로그인한 사용자 권한 확인
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
     if (storedUser) {
@@ -25,13 +24,6 @@ function BottomNav({ onMenuSelect }) {
 
   const handleSelect = (menu) => {
     setActive(menu);
-
-    if (menu === "admin") {
-      // ✅ 관리자 클릭 시 대시보드로 이동
-      navigate("/admin/dashboard");
-      return;
-    }
-
     if (typeof onMenuSelect === "function") {
       onMenuSelect(menu);
     }
@@ -40,7 +32,6 @@ function BottomNav({ onMenuSelect }) {
   const activeColor = "#007bff";
   const inactiveColor = "#6c757d";
 
-  // ✅ 관리자 여부에 따라 메뉴 구성
   const navItems = [
     { key: "attendance", icon: <BsClockHistory size={22} />, label: "근무조회" },
     { key: "vacation", icon: <BsUmbrella size={22} />, label: "연차신청" },
@@ -65,10 +56,7 @@ function BottomNav({ onMenuSelect }) {
     >
       <Nav
         className="d-flex justify-content-between align-items-center w-100 px-3"
-        style={{
-          maxWidth: "430px",
-          margin: "0 auto",
-        }}
+        style={{ maxWidth: "430px", margin: "0 auto" }}
       >
         {navItems.map((item) => (
           <Button

@@ -1,120 +1,121 @@
-// src/pages/ExpenseListPage.js
-import React from "react";
-import { Card, ProgressBar } from "react-bootstrap";
-import { BsBarChart, BsArrowUpCircle, BsArrowDownCircle } from "react-icons/bs";
-import BottomNav from "../components/Nav";
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+import { Card, Spinner, Badge } from "react-bootstrap";
 import Header from "../components/Header";
 
-function ExpenseListPage({ onMenuSelect }) {
-  const expenses = [
-    { id: 1, date: "2025-10-01", amount: 25000, reason: "교통비", status: "승인" },
-    { id: 2, date: "2025-10-04", amount: 48000, reason: "식비", status: "대기" },
-    { id: 3, date: "2025-10-07", amount: 120000, reason: "회식비", status: "거절" },
-  ];
+const ExpenseListPage = () => {
+  const [expenses, setExpenses] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const total = expenses.reduce((sum, e) => sum + e.amount, 0);
-  const max = Math.max(...expenses.map((e) => e.amount));
-  const min = Math.min(...expenses.map((e) => e.amount));
+  useEffect(() => {
+    const fetchExpenses = async () => {
+      const token = localStorage.getItem("token");
+      const url = "http://localhost:3000/expense"; // ✅ 백엔드 주소 (포트 3000)
+
+      console.log("📡 [FETCH START] 지출내역 요청 시작");
+
+      try {
+        const response = await axios.get(url, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        console.log("✅ [FETCH SUCCESS]", response.data);
+        setExpenses(response.data);
+      } catch (err) {
+        console.error("❌ [FETCH ERROR]", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchExpenses();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="text-center mt-5">
+        <Spinner animation="border" variant="primary" />
+        <p>지출 내역을 불러오는 중...</p>
+      </div>
+    );
+  }
 
   return (
-
-       <>
+    <>
       <Header />
-    
-    <div
-      className="d-flex flex-column align-items-center justify-content-start"
-      style={{
-        minHeight: "100vh",
-        backgroundColor: "#f8f9fa",
-        paddingBottom: "100px",
-        paddingTop: "20px",
-      }}
-    >
-      <Card
-        className="shadow-sm border-0"
-        style={{
-          width: "92%",
-          borderRadius: "20px",
-          background: "#ffffff",
-        }}
-      >
-        <Card.Body>
-          <h5 className="fw-bold mb-3 d-flex align-items-center">
-            <BsBarChart className="me-2 text-primary" /> 지출 조회
-          </h5>
 
-          {/* ✅ 통계 */}
-          <div className="mb-3 text-center">
-            <div className="fw-semibold">총 지출: {total.toLocaleString()}원</div>
-            <div className="text-muted small mt-1">
-              최고: <BsArrowUpCircle className="text-danger" />{" "}
-              {max.toLocaleString()}원 / 최저:{" "}
-              <BsArrowDownCircle className="text-success" />{" "}
-              {min.toLocaleString()}원
-            </div>
-          </div>
+      <div className="container py-4">
+        {/* 상단 헤더 */}
+        <div className="d-flex justify-content-between align-items-center mb-4">
+          <h4 className="fw-bold m-0">💰 내 지출 내역</h4>
+          <Badge bg="secondary" className="fs-6 px-3 py-2">
+            총 {expenses.length}건
+          </Badge>
+        </div>
 
-          {/* ✅ 상태바 */}
-          <div className="mb-3">
-            <div className="d-flex justify-content-between small mb-1">
-              <span>예산 대비 사용률</span>
-              <span className="text-primary">60%</span>
-            </div>
-            <ProgressBar
-              now={60}
-              variant="primary"
-              style={{ height: "8px", borderRadius: "5px" }}
-            />
-          </div>
-
-          {/* ✅ 목록 */}
-          {expenses.map((e) => (
-            <Card
-              key={e.id}
-              className="border-0 shadow-sm mb-2 p-3"
-              style={{
-                borderLeft:
-                  e.status === "승인"
-                    ? "4px solid #4e73df"
-                    : e.status === "거절"
-                    ? "4px solid #e74a3b"
-                    : "4px solid #f6c23e",
-              }}
-            >
-              <div className="d-flex justify-content-between">
-                <div>
-                  <div className="fw-bold">{e.reason}</div>
-                  <div className="small text-muted">{e.date}</div>
-                </div>
-                <div className="text-end">
-                  <div className="fw-semibold">
-                    {e.amount.toLocaleString()}원
+        {/* 본문 리스트 */}
+        {expenses.length === 0 ? (
+          <Card className="p-4 text-center shadow-sm border-0">
+            <p className="text-muted mb-0">등록된 지출 내역이 없습니다.</p>
+          </Card>
+        ) : (
+          <div className="d-flex flex-column gap-3">
+            {expenses.map((exp) => (
+              <Card
+                key={exp.expense_id}
+                className="shadow-sm border-0 rounded-4 p-3"
+                style={{
+                  transition: "0.2s",
+                  cursor: "default",
+                }}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.boxShadow =
+                    "0 4px 12px rgba(0,0,0,0.15)")
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.boxShadow =
+                    "0 2px 6px rgba(0,0,0,0.1)")
+                }
+              >
+                <div className="d-flex justify-content-between align-items-center">
+                  {/* 왼쪽: 내용 + 날짜 */}
+                  <div>
+                    <div className="fw-semibold fs-5 mb-1">
+                      {exp.category || "기타"}
+                    </div>
+                    <div className="text-muted small mb-1">
+                      {exp.description || "내용 없음"}
+                    </div>
+                    <div className="text-muted small">
+                      {new Date(exp.created_at).toLocaleDateString()}
+                    </div>
                   </div>
-                  <div
-                    className="small"
-                    style={{
-                      color:
-                        e.status === "승인"
-                          ? "#4e73df"
-                          : e.status === "거절"
-                          ? "#e74a3b"
-                          : "#f6c23e",
-                      fontWeight: "600",
-                    }}
-                  >
-                    {e.status}
+
+                  {/* 오른쪽: 금액 + 상태 */}
+                  <div className="text-end">
+                    <div className="text-primary fw-bold fs-5">
+                      {Number(exp.amount).toLocaleString()}원
+                    </div>
+                    <Badge
+                      bg={
+                        exp.approval_status === "승인"
+                          ? "success"
+                          : exp.approval_status === "반려"
+                          ? "danger"
+                          : "secondary"
+                      }
+                      className="mt-2"
+                    >
+                      {exp.approval_status}
+                    </Badge>
                   </div>
                 </div>
-              </div>
-            </Card>
-          ))}
-        </Card.Body>
-      </Card>
-
-      <BottomNav onMenuSelect={onMenuSelect} />
-    </div>
-      </>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
+    </>
   );
-}
+};
 
 export default ExpenseListPage;
