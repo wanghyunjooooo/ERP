@@ -216,17 +216,8 @@ function VacationPage({ onMenuSelect }) {
                 <strong className="text-primary">{requestedDays}일</strong>
               </div>
               <div className="d-flex justify-content-between mt-1">
-                <span>남은 연차</span>
-                <strong className="text-success">{remainingDays}일</strong>
+               
               </div>
-              <ProgressBar
-                now={(usedDays / totalDays) * 100}
-                className="mt-3"
-                variant="info"
-              />
-              <small className="text-muted">
-                사용 {usedDays}일 / 총 {totalDays}일
-              </small>
             </Card>
 
             <Button
