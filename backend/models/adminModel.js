@@ -43,3 +43,15 @@ exports.updateLeaveApproval = async (leave_id, approved_by, approval_status) => 
     );
     return result.rows[0];
 };
+
+exports.updateExpenseApproval = async (expense_id, approved_by, approval_status) => {
+    const result = await pool.query(
+        `UPDATE "Expense"
+        SET approval_status = $1,
+            approved_by = $2
+        WHERE expense_id = $3
+        RETURNING expense_id, user_id, approval_status, approved_by`,
+        [approval_status, approved_by, expense_id]
+    );
+    return result.rows[0];
+};
