@@ -9,33 +9,43 @@ const ApprovalTab = () => {
 
   const token = localStorage.getItem("token");
 
-  // ✅ 공통 fetch 함수
   const fetchData = async (url, setter, mapper) => {
     try {
+      console.log(`📡 요청: ${url}`);
       const res = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` },
       });
+      console.log(`📡 응답 상태: ${res.status}`);
       const data = await res.json();
-      setter(mapper(data));
+      console.log(`📦 ${url} 응답 데이터:`, data);
+
+      const filtered = data.filter((item) => item.approval_status === "대기");
+      console.log(`🧩 ${url} 대기 데이터 (${filtered.length}개):`, filtered);
+
+      setter(mapper(filtered));
     } catch (err) {
       console.error(`❌ ${url} 데이터 불러오기 실패:`, err);
       setter([]);
     }
   };
 
-  // ✅ 출퇴근 / 연차 / 지출 불러오기
   const fetchAllApprovals = async () => {
     setLoading(true);
     try {
       await Promise.all([
         fetchData("http://localhost:3000/attend", setAttendApprovals, (data) =>
-          data.map((item) => ({
-            id: item.attend_id,
-            user_name: item.user_name,
-            date: new Date(item.attend_date).toLocaleDateString("ko-KR"),
-            type: item.status, // "출근" | "퇴근"
-            status: item.approval_status,
-          }))
+          data.map((item) => {
+            let type = "기타";
+            if (item.status.includes("출근")) type = "출근";
+            else if (item.status.includes("퇴근")) type = "퇴근";
+            return {
+              id: item.attend_id,
+              user_name: item.user_name,
+              date: new Date(item.attend_date).toLocaleDateString("ko-KR"),
+              type,
+              status: item.approval_status,
+            };
+          })
         ),
         fetchData("http://localhost:3000/leave", setLeaveApprovals, (data) =>
           data.map((item) => ({
@@ -55,9 +65,9 @@ const ApprovalTab = () => {
             id: item.expense_id,
             user_name: item.user_name,
             dept: item.dept_name,
-            reason: item.purpose,
-            amount: item.amount,
-            date: new Date(item.applied_at).toLocaleDateString("ko-KR"),
+            reason: item.description,
+            amount: parseFloat(item.amount),
+            date: new Date(item.created_at).toLocaleDateString("ko-KR"),
             type: "지출",
             status: item.approval_status,
           }))
@@ -72,13 +82,8 @@ const ApprovalTab = () => {
     fetchAllApprovals();
   }, []);
 
-  // ✅ 승인 / 거절 / 지각 공통 처리
   const handleApproval = async (category, id, action) => {
-    const map = {
-      approve: "승인",
-      reject: "거절",
-      late: "지각",
-    };
+    const map = { approve: "승인", reject: "거절", late: "지각" };
     const approval_status = map[action];
     if (!approval_status) return;
 
@@ -100,22 +105,15 @@ const ApprovalTab = () => {
 
       if (res.ok) {
         alert(`✅ ${approval_status} 처리 완료`);
-
-        // 승인된 항목 즉시 제거
-        if (category === "attend") {
-          setAttendApprovals((prev) => prev.filter((a) => a.id !== id));
-        } else if (category === "leave") {
-          setLeaveApprovals((prev) => prev.filter((a) => a.id !== id));
-        } else if (category === "expense") {
-          setExpenseApprovals((prev) => prev.filter((a) => a.id !== id));
-        }
+        await fetchAllApprovals();
+      } else {
+        console.error("❌ 승인 실패:", res.statusText);
       }
     } catch (err) {
       console.error(`❌ ${category} 승인 오류:`, err);
     }
   };
 
-  // ✅ 섹션 렌더링
   const renderSection = (title, items, category, showLate = false) => (
     <div className="mb-4">
       <h6 className="fw-bold mb-3">{title}</h6>
@@ -147,14 +145,6 @@ const ApprovalTab = () => {
                     {item.status}
                   </Badge>
                 </div>
-                {item.reason && (
-                  <div className="small text-secondary">사유: {item.reason}</div>
-                )}
-                {item.amount && (
-                  <div className="small text-secondary">
-                    금액: {item.amount.toLocaleString()}원
-                  </div>
-                )}
               </div>
 
               <div className="d-flex gap-2 flex-shrink-0 ms-3">
@@ -189,13 +179,11 @@ const ApprovalTab = () => {
     </div>
   );
 
-  // ✅ 출근 / 퇴근 분리
   const attendStart = attendApprovals.filter((a) => a.type === "출근");
   const attendEnd = attendApprovals.filter((a) => a.type === "퇴근");
 
   return (
     <Card className="p-4 shadow-sm border-0 rounded-4">
-
       {loading ? (
         <div className="text-center py-4">
           <Spinner animation="border" />
