@@ -14,8 +14,6 @@ router.get("/status/:id", authMiddleware, attendController.getStatusByUserId);
 router.get("/summary/monthly/:id", authMiddleware, attendController.getMonthlySummary);
 router.get("/summary/weekly/:id", authMiddleware, attendController.getWeeklySummary);
 
-router.get("/approval/:user_id", authMiddleware, attendController.getApprovalStatus);
-
 router.get("/:id", authMiddleware, attendController.getAttendByUserId);
 
 module.exports = router;

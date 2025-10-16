@@ -196,20 +196,3 @@ exports.getWeeklySummary = async (user_id) => {
     );
     return result.rows[0] || { total_hours: 0 };
 };
-
-exports.getApprovalStatus = async (user_id) => {
-    const result = await pool.query(
-        `
-        SELECT 
-            attend_id,
-            attend_date,
-            approval_status,
-            approved_by
-        FROM "Attend"
-        WHERE user_id = $1
-        ORDER BY attend_date DESC;
-    `,
-        [user_id]
-    );
-    return result.rows;
-};

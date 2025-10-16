@@ -110,14 +110,3 @@ exports.getWeeklySummary = async (req, res) => {
         res.status(500).json({ error: "주간 근무시간 조회 실패" });
     }
 };
-
-exports.getApprovalStatus = async (req, res) => {
-    const user_id = parseInt(req.params.user_id);
-    try {
-        const approvals = await attendModel.getApprovalStatus(user_id);
-        res.json(approvals);
-    } catch (err) {
-        console.error("승인 내역 조회 오류:", err);
-        res.status(500).json({ error: "승인 내역 조회 실패" });
-    }
-};
