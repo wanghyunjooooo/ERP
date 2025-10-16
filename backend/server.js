@@ -13,6 +13,7 @@ app.use(bodyParser.json());
 app.use("/users", require("./routes/userRoutes"));
 app.use("/admin", require("./routes/adminRoutes"));
 app.use("/attend", require("./routes/attendRoutes"));
+app.use("/leave", require("./routes/leaveRoutes"));
 
 app.get("/", (req, res) => {
     res.send("Hello Node.js");
