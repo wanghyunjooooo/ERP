@@ -8,10 +8,8 @@ import AttendList from "../components/AttendList";
 import ApprovalList from "../components/ApprovalList";
 
 function Home() {
-  // 상태들
-  const [isWorking, setIsWorking] = useState(false);
-  const [approvalStatus, setApprovalStatus] = useState(""); // ✅ 추가
   const [currentStatus, setCurrentStatus] = useState("");
+  const [rawStatus, setRawStatus] = useState({ status: null, approval_status: null });
   const [today, setToday] = useState("");
   const [user, setUser] = useState(null);
   const [attendList, setAttendList] = useState([]);
@@ -23,7 +21,7 @@ function Home() {
   const monthlyGoal = 160;
   const weeklyGoal = 40;
 
-  // 오늘 날짜
+  // 오늘 날짜 표시용
   useEffect(() => {
     const now = new Date();
     const formatted = now.toLocaleDateString("ko-KR", {
@@ -41,23 +39,44 @@ function Home() {
     window.location.href = "/login";
   };
 
-  // 사용자 정보
+  // ✅ DB status + approval_status → 화면 표시용 변환 함수
+  const makeDisplayStatus = (status, approval_status) => {
+    if (!status && !approval_status) return "확인중";
+
+    if (status === "출근") {
+      if (approval_status === "대기") return "출근 대기";
+      if (approval_status === "승인") return "근무";
+      return "출근";
+    }
+
+    if (status === "퇴근") {
+      if (approval_status === "대기") return "퇴근 대기";
+      if (approval_status === "승인") return "퇴근";
+      return "퇴근";
+    }
+
+    if (status === "근무") return "근무";
+    return status || "확인중";
+  };
+
+  // ✅ 사용자 정보 불러오기
   useEffect(() => {
     const token = getToken();
-    const storedUser = JSON.parse(localStorage.getItem("user"));
+    const storedUser = localStorage.getItem("user");
     if (!token || !storedUser) {
       setLoading(false);
       return;
     }
 
+    const parsed = JSON.parse(storedUser);
     axios
-      .get(`http://localhost:3000/users/${storedUser.user_id}`, {
+      .get(`http://localhost:3000/users/${parsed.user_id}`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((res) => setUser(res.data))
       .catch((err) => {
         console.error("❌ 사용자 조회 실패:", err);
-        if (err.response && (err.response.status === 401 || err.response.status === 403)) {
+        if (err.response?.status === 401 || err.response?.status === 403) {
           requireLogin();
         } else {
           setLoading(false);
@@ -65,43 +84,39 @@ function Home() {
       });
   }, []);
 
-  useEffect(() => {
-    if (user) {
-      fetchAll();
-      checkCurrentStatus();
-    }
-  }, [user]);
-
-  // ✅ 현재 근무 상태
-  const checkCurrentStatus = async () => {
+  // ✅ 현재 출퇴근 상태 불러오기 (DB 기준)
+  const fetchAttendanceStatus = async () => {
     try {
       const token = getToken();
       if (!token || !user) return;
+
       const res = await axios.get(
         `http://localhost:3000/attend/status/${user.user_id}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      const { status, approval_status } = res.data || {};
-      setCurrentStatus(status);
-      setApprovalStatus(approval_status || ""); // ✅ approval_status 추적
 
-      // 상태 조합 로직
-      if (approval_status === "대기") {
-        setIsWorking("pending"); // 승인 대기
-      } else if (["출근", "근무 중"].includes(status)) {
-        setIsWorking(true); // 근무 중
-      } else {
-        setIsWorking(false); // 퇴근 상태
-      }
+      console.log("📡 서버 응답:", res.data);
+
+      // ✅ 배열 응답인 경우 첫 번째 항목 사용
+      const latest =
+        Array.isArray(res.data) && res.data.length > 0
+          ? res.data[0]
+          : res.data;
+
+      const { status, approval_status } = latest || {};
+     
+      setRawStatus({ status, approval_status });
+      setCurrentStatus(makeDisplayStatus(status, approval_status));
     } catch (err) {
-      console.error("❌ 현재 상태 조회 실패:", err);
+     
     }
   };
 
-  // ✅ 전체 데이터 로드
+  // ✅ 전체 데이터(근태 목록, 요약) 불러오기
   const fetchAll = async () => {
     const token = getToken();
     if (!token) return requireLogin();
+    if (!user) return;
 
     try {
       setLoading(true);
@@ -125,58 +140,57 @@ function Home() {
       setWeeklyHours(Number(weekRes.data?.total_hours || 0));
     } catch (err) {
       console.error("❌ 데이터 로드 실패:", err);
-      if (err.response && (err.response.status === 401 || err.response.status === 403))
+      if (err.response?.status === 401 || err.response?.status === 403)
         requireLogin();
     } finally {
       setLoading(false);
     }
   };
 
-  // ✅ 출퇴근 처리
+  // ✅ 초기 데이터 로드
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      await fetchAttendanceStatus();
+      await fetchAll();
+    })();
+  }, [user]);
+
+  // ✅ 출퇴근 요청 (버튼에서 호출)
   const handleWorkToggle = async () => {
     if (!user) return requireLogin();
     const token = getToken();
     if (!token) return requireLogin();
 
     try {
-      if (!isWorking) {
-        // 출근
-        const res = await axios.post(
-          "http://localhost:3000/attend/start",
-          {},
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        alert(`✅ 출근 완료!\n출근시간: ${res.data.attend.start_time}`);
-        setIsWorking(true);
-        setApprovalStatus("승인");
+      const s = rawStatus.status;
+      const a = rawStatus.approval_status;
+      let endpoint = "";
+
+      if (s === "근무" || (s === "출근" && a === "승인")) {
+        endpoint = "http://localhost:3000/attend/end";
       } else {
-        // 퇴근
-        const res = await axios.post(
-          "http://localhost:3000/attend/end",
-          {},
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        const approval = res.data.attend.approval_status || "대기";
-        if (approval === "대기") {
-          alert("✅ 퇴근 요청이 등록되었습니다. 승인 대기 중입니다.");
-          setApprovalStatus("대기");
-          setIsWorking("pending");
-        } else {
-          alert(
-            `✅ 퇴근 완료!\n퇴근시간: ${res.data.attend.end_time}\n총 근무시간: ${res.data.attend.total_hours}시간`
-          );
-          setApprovalStatus("승인");
-          setIsWorking(false);
-        }
+        endpoint = "http://localhost:3000/attend/start";
       }
 
-      setTimeout(() => {
-        fetchAll();
-        checkCurrentStatus();
-      }, 500);
+      const res = await axios.post(endpoint, {}, { headers: { Authorization: `Bearer ${token}` } });
+      const attend = res.data?.attend || res.data;
+
+      if (attend) {
+        const { status, approval_status } = attend;
+       
+        setRawStatus({ status, approval_status });
+        setCurrentStatus(makeDisplayStatus(status, approval_status));
+      } else {
+        // 응답이 없으면 강제로 다시 조회
+        await fetchAttendanceStatus();
+      }
+
+      // 최신 목록 갱신
+      fetchAll();
     } catch (err) {
-      const msg = err.response?.data?.error || err.message;
-      alert(msg || "출퇴근 처리 오류 발생");
+     
+      alert("요청 중 오류가 발생했습니다.");
     }
   };
 
@@ -217,12 +231,12 @@ function Home() {
         </h5>
         <p className="text-muted text-center mb-4">{today}</p>
 
-        {/* ✅ 수정된 부분 — approvalStatus 함께 전달 */}
+        {/* ✅ WorkButton */}
         <WorkButton
-          isWorking={isWorking}
-          approvalStatus={approvalStatus}
           currentStatus={currentStatus}
-          handleWorkToggle={handleWorkToggle}
+          fetchAttendanceStatus={fetchAttendanceStatus}
+          token={getToken()}
+          onToggle={handleWorkToggle}
         />
 
         <WorkSummary

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Navbar, Nav, Button } from "react-bootstrap";
 import {
-  BsClockHistory,
+  BsHouseDoor,
   BsUmbrella,
   BsCashStack,
   BsBarChart,
@@ -10,7 +10,7 @@ import {
 import { useNavigate } from "react-router-dom";
 
 function BottomNav({ onMenuSelect }) {
-  const [active, setActive] = useState("attendance");
+  const [active, setActive] = useState("home");
   const [isAdmin, setIsAdmin] = useState(false);
   const navigate = useNavigate();
 
@@ -27,13 +27,16 @@ function BottomNav({ onMenuSelect }) {
     if (typeof onMenuSelect === "function") {
       onMenuSelect(menu);
     }
+
+    // ✅ /home으로 이동
+    if (menu === "home") navigate("/home");
   };
 
   const activeColor = "#007bff";
   const inactiveColor = "#6c757d";
 
   const navItems = [
-    { key: "attendance", icon: <BsClockHistory size={22} />, label: "근무조회" },
+    { key: "home", icon: <BsHouseDoor size={22} />, label: "홈" }, // ✅ 변경됨
     { key: "vacation", icon: <BsUmbrella size={22} />, label: "연차신청" },
     { key: "expense", icon: <BsCashStack size={22} />, label: "지출신청" },
     { key: "expenseList", icon: <BsBarChart size={22} />, label: "지출조회" },
