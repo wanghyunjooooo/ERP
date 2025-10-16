@@ -26,3 +26,21 @@ exports.createLoginLog = async (user_id, ip_address) => {
         [user_id, ip_address]
     );
 };
+
+exports.getLogsByUserId = async (user_id) => {
+    const result = await pool.query(
+        `
+        SELECT 
+            log_id,
+            user_id,
+            login_time,
+            logout_time,
+            ip_address
+        FROM "Log"
+        WHERE user_id = $1
+        ORDER BY login_time DESC
+    `,
+        [user_id]
+    );
+    return result.rows;
+};
