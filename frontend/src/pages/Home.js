@@ -1,23 +1,19 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import {
-  Button,
-  Card,
-  Container,
-  Row,
-  Col,
-  ProgressBar,
-  Navbar,
-  ListGroup,
-  Spinner,
-} from "react-bootstrap";
+import { Container, Navbar, Spinner } from "react-bootstrap";
 import BottomNav from "../components/Nav";
+import WorkButton from "../components/WorkButton";
+import WorkSummary from "../components/WorkSummary";
+import AttendList from "../components/AttendList";
+import ApprovalList from "../components/ApprovalList";
 
 function Home() {
+  // 상태들
   const [isWorking, setIsWorking] = useState(false);
+  const [approvalStatus, setApprovalStatus] = useState(""); // ✅ 추가
+  const [currentStatus, setCurrentStatus] = useState("");
   const [today, setToday] = useState("");
   const [user, setUser] = useState(null);
-  const [attendId, setAttendId] = useState(null);
   const [attendList, setAttendList] = useState([]);
   const [approvalList, setApprovalList] = useState([]);
   const [monthlyHours, setMonthlyHours] = useState(0);
@@ -27,7 +23,7 @@ function Home() {
   const monthlyGoal = 160;
   const weeklyGoal = 40;
 
-  // 오늘 날짜 표시
+  // 오늘 날짜
   useEffect(() => {
     const now = new Date();
     const formatted = now.toLocaleDateString("ko-KR", {
@@ -39,137 +35,179 @@ function Home() {
     setToday(formatted);
   }, []);
 
-  // 사용자 정보 불러오기
+  const getToken = () => localStorage.getItem("token");
+  const requireLogin = () => {
+    alert("로그인이 필요합니다. 로그인 페이지로 이동합니다.");
+    window.location.href = "/login";
+  };
+
+  // 사용자 정보
   useEffect(() => {
-    const token = localStorage.getItem("token");
+    const token = getToken();
     const storedUser = JSON.parse(localStorage.getItem("user"));
-    if (!token || !storedUser) return;
+    if (!token || !storedUser) {
+      setLoading(false);
+      return;
+    }
 
     axios
       .get(`http://localhost:3000/users/${storedUser.user_id}`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((res) => setUser(res.data))
-      .catch((err) => console.error("❌ 사용자 조회 실패:", err));
+      .catch((err) => {
+        console.error("❌ 사용자 조회 실패:", err);
+        if (err.response && (err.response.status === 401 || err.response.status === 403)) {
+          requireLogin();
+        } else {
+          setLoading(false);
+        }
+      });
   }, []);
 
-  // 출퇴근 내역 / 근무시간 / 승인내역 한 번에 로드
   useEffect(() => {
-    if (!user) return;
-    const token = localStorage.getItem("token");
-    const userId = user.user_id;
-
-    const fetchAll = async () => {
-      try {
-        setLoading(true);
-
-        const [attendRes, monthRes, weekRes, approvalRes] = await Promise.all([
-          axios.get(`http://localhost:3000/attend/${userId}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-          axios.get(`http://localhost:3000/attend/summary/monthly/${userId}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-          axios.get(`http://localhost:3000/attend/summary/weekly/${userId}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-          axios.get(`http://localhost:3000/attend/approval/${userId}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-        ]);
-
-        // 출퇴근 내역
-        const attendData = attendRes.data || [];
-        setAttendList(attendData);
-
-        // 오늘 출근 상태 확인
-        const todayStr = new Date().toISOString().split("T")[0];
-        const todayAttend = attendData.find(
-          (a) => a.attend_date.split("T")[0] === todayStr
-        );
-        if (todayAttend) {
-          setIsWorking(!todayAttend.end_time);
-          setAttendId(todayAttend.attend_id);
-        } else {
-          setIsWorking(false);
-          setAttendId(null);
-        }
-
-        // 근무시간
-        setMonthlyHours(Number(monthRes.data?.total_hours || 0));
-        setWeeklyHours(Number(weekRes.data?.total_hours || 0));
-
-        // 승인 내역
-        const approvalData = approvalRes.data?.attendance
-          ? [approvalRes.data.attendance]
-          : Array.isArray(approvalRes.data)
-          ? approvalRes.data
-          : [];
-        setApprovalList(approvalData);
-      } catch (err) {
-        console.error("❌ 데이터 로드 실패:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchAll();
+    if (user) {
+      fetchAll();
+      checkCurrentStatus();
+    }
   }, [user]);
 
-  // 출근 / 퇴근 토글
+  // ✅ 현재 근무 상태
+  const checkCurrentStatus = async () => {
+    try {
+      const token = getToken();
+      if (!token || !user) return;
+      const res = await axios.get(
+        `http://localhost:3000/attend/status/${user.user_id}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const { status, approval_status } = res.data || {};
+      setCurrentStatus(status);
+      setApprovalStatus(approval_status || ""); // ✅ approval_status 추적
+
+      // 상태 조합 로직
+      if (approval_status === "대기") {
+        setIsWorking("pending"); // 승인 대기
+      } else if (["출근", "근무 중"].includes(status)) {
+        setIsWorking(true); // 근무 중
+      } else {
+        setIsWorking(false); // 퇴근 상태
+      }
+    } catch (err) {
+      console.error("❌ 현재 상태 조회 실패:", err);
+    }
+  };
+
+  // ✅ 전체 데이터 로드
+  const fetchAll = async () => {
+    const token = getToken();
+    if (!token) return requireLogin();
+
+    try {
+      setLoading(true);
+      const userId = user.user_id;
+      const [attendRes, monthRes, weekRes] = await Promise.all([
+        axios.get(`http://localhost:3000/attend/${userId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        axios.get(`http://localhost:3000/attend/summary/monthly/${userId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        axios.get(`http://localhost:3000/attend/summary/weekly/${userId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+      ]);
+
+      const attendData = attendRes.data || [];
+      setAttendList(attendData);
+      setApprovalList(attendData.filter((a) => a.approval_status === "대기"));
+      setMonthlyHours(Number(monthRes.data?.total_hours || 0));
+      setWeeklyHours(Number(weekRes.data?.total_hours || 0));
+    } catch (err) {
+      console.error("❌ 데이터 로드 실패:", err);
+      if (err.response && (err.response.status === 401 || err.response.status === 403))
+        requireLogin();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ✅ 출퇴근 처리
   const handleWorkToggle = async () => {
-    if (!user) return;
-    const token = localStorage.getItem("token");
-    const now = new Date();
-    const attend_date = now.toISOString().split("T")[0];
-    const timeStr = now.toTimeString().split(" ")[0];
+    if (!user) return requireLogin();
+    const token = getToken();
+    if (!token) return requireLogin();
 
     try {
       if (!isWorking) {
-        // 출근 등록
+        // 출근
         const res = await axios.post(
-          "http://localhost:3000/attend",
-          { attend_date, start_time: timeStr, status: "근무중" },
+          "http://localhost:3000/attend/start",
+          {},
           { headers: { Authorization: `Bearer ${token}` } }
         );
-        setAttendId(res.data?.attend?.attend_id || null);
+        alert(`✅ 출근 완료!\n출근시간: ${res.data.attend.start_time}`);
         setIsWorking(true);
+        setApprovalStatus("승인");
       } else {
-        // 퇴근 처리
-        if (!attendId) {
-          alert("퇴근 기록이 없습니다.");
-          return;
-        }
-        await axios.put(
-          `http://localhost:3000/attend/${attendId}`,
-          { end_time: timeStr, status: "퇴근" },
+        // 퇴근
+        const res = await axios.post(
+          "http://localhost:3000/attend/end",
+          {},
           { headers: { Authorization: `Bearer ${token}` } }
         );
-        setIsWorking(false);
+        const approval = res.data.attend.approval_status || "대기";
+        if (approval === "대기") {
+          alert("✅ 퇴근 요청이 등록되었습니다. 승인 대기 중입니다.");
+          setApprovalStatus("대기");
+          setIsWorking("pending");
+        } else {
+          alert(
+            `✅ 퇴근 완료!\n퇴근시간: ${res.data.attend.end_time}\n총 근무시간: ${res.data.attend.total_hours}시간`
+          );
+          setApprovalStatus("승인");
+          setIsWorking(false);
+        }
       }
+
+      setTimeout(() => {
+        fetchAll();
+        checkCurrentStatus();
+      }, 500);
     } catch (err) {
-      console.error("❌ 출퇴근 처리 실패:", err);
-      alert("출퇴근 처리 중 오류가 발생했습니다.");
+      const msg = err.response?.data?.error || err.message;
+      alert(msg || "출퇴근 처리 오류 발생");
     }
   };
 
   if (loading)
     return (
       <div className="text-center mt-5">
-        <Spinner animation="border" variant="primary" />
+        <Spinner animation="border" />
         <p className="mt-3">데이터 불러오는 중...</p>
       </div>
     );
 
   return (
-    <div style={{ backgroundColor: "#f7f9fc", minHeight: "100vh", paddingBottom: "70px" }}>
+    <div
+      style={{
+        backgroundColor: "#f7f9fc",
+        minHeight: "100vh",
+        paddingBottom: "70px",
+      }}
+    >
       <Navbar
         fixed="top"
-        style={{ background: "linear-gradient(135deg, #74ABE2, #5563DE)", color: "white" }}
+        style={{
+          background: "linear-gradient(135deg, #74ABE2, #5563DE)",
+          color: "white",
+        }}
         className="shadow-sm"
       >
         <Container className="justify-content-center">
-          <Navbar.Brand className="text-white fw-bold fs-5 mb-0">ERP</Navbar.Brand>
+          <Navbar.Brand className="text-white fw-bold fs-5 mb-0">
+            ERP 근태관리
+          </Navbar.Brand>
         </Container>
       </Navbar>
 
@@ -179,110 +217,22 @@ function Home() {
         </h5>
         <p className="text-muted text-center mb-4">{today}</p>
 
-        {/* 출퇴근 버튼 */}
-        <Card className="shadow-sm mb-4 p-3 rounded-4 border-0">
-          <Card.Title className="fw-semibold mb-3 text-center">출근 / 퇴근</Card.Title>
-          <div className="text-center">
-            <Button
-              variant={isWorking ? "danger" : "success"}
-              className="rounded-3 px-4 py-2 fw-semibold"
-              onClick={handleWorkToggle}
-            >
-              {isWorking ? "퇴근하기" : "출근하기"}
-            </Button>
-            <p className="mt-3 text-muted mb-0">
-              현재 상태:{" "}
-              <strong style={{ color: isWorking ? "red" : "green" }}>
-                {isWorking ? "근무 중" : "퇴근 상태"}
-              </strong>
-            </p>
-          </div>
-        </Card>
+        {/* ✅ 수정된 부분 — approvalStatus 함께 전달 */}
+        <WorkButton
+          isWorking={isWorking}
+          approvalStatus={approvalStatus}
+          currentStatus={currentStatus}
+          handleWorkToggle={handleWorkToggle}
+        />
 
-        {/* 근무시간 현황 */}
-        <Card className="shadow-sm mb-4 p-3 rounded-4 border-0">
-          <Card.Title className="fw-semibold mb-3 text-center">근무 시간 현황</Card.Title>
-          <Row>
-            <Col xs={12} className="mb-3">
-              <p className="mb-1 text-muted small">이번달 총 근무시간</p>
-              <ProgressBar
-                now={(monthlyHours / monthlyGoal) * 100}
-                label={`${monthlyHours}h / ${monthlyGoal}h`}
-                style={{ height: "22px", borderRadius: "10px" }}
-              />
-            </Col>
-            <Col xs={12}>
-              <p className="mb-1 text-muted small">이번주 근무시간</p>
-              <ProgressBar
-                now={(weeklyHours / weeklyGoal) * 100}
-                label={`${weeklyHours}h / ${weeklyGoal}h`}
-                variant="info"
-                style={{ height: "22px", borderRadius: "10px" }}
-              />
-            </Col>
-          </Row>
-        </Card>
-
-        {/* ✅ 출퇴근 내역 */}
-        <Card className="shadow-sm mb-4 p-3 rounded-4 border-0">
-          <Card.Title className="fw-semibold mb-3 text-center">내 출퇴근 내역</Card.Title>
-          {attendList.length === 0 ? (
-            <div className="text-center text-muted py-3">출퇴근 내역이 없습니다.</div>
-          ) : (
-            <ListGroup variant="flush">
-              {attendList.map((a) => (
-                <ListGroup.Item key={a.attend_id}>
-                  <div className="d-flex justify-content-between">
-                    <div>
-                      <div className="fw-semibold">{a.attend_date.split("T")[0]}</div>
-                      <div className="text-muted small">
-                        출근 {a.start_time || "-"} / 퇴근 {a.end_time || "-"}
-                      </div>
-                    </div>
-                    <div className="text-end">
-                      <div className="text-muted small">상태</div>
-                      <div className="fw-bold">
-                        {a.status} ({a.approval_status})
-                      </div>
-                    </div>
-                  </div>
-                </ListGroup.Item>
-              ))}
-            </ListGroup>
-          )}
-        </Card>
-
-        {/* ✅ 승인 내역 */}
-        <Card className="shadow-sm mb-4 p-3 rounded-4 border-0">
-          <Card.Title className="fw-semibold mb-3 text-center">승인 내역</Card.Title>
-          {approvalList.length === 0 ? (
-            <div className="text-center text-muted py-3">승인 요청 내역이 없습니다.</div>
-          ) : (
-            <ListGroup variant="flush">
-              {approvalList.map((a) => (
-                <ListGroup.Item key={a.attendance_id}>
-                  <div className="d-flex justify-content-between">
-                    <div>
-                      <div className="fw-semibold">
-                        {a.type === "check_in" ? "출근" : "퇴근"} 요청
-                      </div>
-                      <div className="text-muted small">
-                        요청일: {new Date(a.time).toLocaleString("ko-KR")}
-                      </div>
-                    </div>
-                    <div className="text-end fw-bold">
-                      {a.status === "approved"
-                        ? "승인됨"
-                        : a.status === "rejected"
-                        ? "반려됨"
-                        : "대기중"}
-                    </div>
-                  </div>
-                </ListGroup.Item>
-              ))}
-            </ListGroup>
-          )}
-        </Card>
+        <WorkSummary
+          monthlyHours={monthlyHours}
+          weeklyHours={weeklyHours}
+          monthlyGoal={monthlyGoal}
+          weeklyGoal={weeklyGoal}
+        />
+        <AttendList attendList={attendList} />
+        <ApprovalList approvalList={approvalList} />
       </Container>
 
       <BottomNav />
