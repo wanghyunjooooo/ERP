@@ -26,3 +26,17 @@ exports.getAllLeaves = async (req, res) => {
         res.status(500).json({ error: "전체 연차 조회 실패" });
     }
 };
+
+exports.getLeaveByUserId = async (req, res) => {
+    const user_id = parseInt(req.params.id);
+    try {
+        const leaves = await leaveModel.getLeaveByUserId(user_id);
+        if (!leaves || leaves.length === 0) {
+            console.log("해당 사원의 연차 내역이 없습니다.");
+        }
+        res.json(leaves);
+    } catch (err) {
+        console.error("개별 연차 조회 오류:", err);
+        res.status(500).json({ error: "연차 조회 실패" });
+    }
+};

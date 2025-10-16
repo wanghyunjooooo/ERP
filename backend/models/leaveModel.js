@@ -34,3 +34,24 @@ exports.getAllLeaves = async () => {
     `);
     return result.rows;
 };
+
+exports.getLeaveByUserId = async (user_id) => {
+    const result = await pool.query(
+        `
+        SELECT 
+            l.leave_id,
+            l.start_date,
+            l.end_date,
+            l.reason,
+            l.leave_type,
+            l.approval_status,
+            l.applied_at,
+            l.approved_by
+        FROM "Leave" l
+        WHERE l.user_id = $1
+        ORDER BY l.applied_at DESC
+    `,
+        [user_id]
+    );
+    return result.rows;
+};
