@@ -32,3 +32,23 @@ exports.getAllExpenses = async () => {
     `);
     return result.rows;
 };
+
+exports.getExpenseByUserId = async (user_id) => {
+    const result = await pool.query(
+        `
+        SELECT 
+            expense_id,
+            amount,
+            category,
+            description,
+            approval_status,
+            created_at,
+            approved_by
+        FROM "Expense"
+        WHERE user_id = $1
+        ORDER BY created_at DESC
+    `,
+        [user_id]
+    );
+    return result.rows;
+};

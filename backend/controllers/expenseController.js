@@ -26,3 +26,16 @@ exports.getAllExpenses = async (req, res) => {
         res.status(500).json({ error: "지출 전체 조회 실패" });
     }
 };
+
+exports.getExpenseByUserId = async (req, res) => {
+    const user_id = parseInt(req.params.id);
+
+    try {
+        const expenses = await expenseModel.getExpenseByUserId(user_id);
+        if (expenses.length === 0) return res.status(404).json({ error: "해당 사원의 지출 내역이 없습니다" });
+        res.json(expenses);
+    } catch (err) {
+        console.error("지출 내역 조회 오류:", err);
+        res.status(500).json({ error: "지출 내역 조회 실패" });
+    }
+};
