@@ -1,6 +1,10 @@
 const adminModel = require("../models/adminModel");
 
 exports.approveAttend = async (req, res) => {
+    if (req.user.user_auth !== "관리자") {
+        return res.status(403).json({ error: "관리자 권한이 필요합니다." });
+    }
+
     const attend_id = parseInt(req.params.id);
     const { approval_status } = req.body;
     const approved_by = req.user.user_id;
@@ -21,6 +25,10 @@ exports.approveAttend = async (req, res) => {
 };
 
 exports.approveLeave = async (req, res) => {
+    if (req.user.user_auth !== "관리자") {
+        return res.status(403).json({ error: "관리자 권한이 필요합니다." });
+    }
+
     const leave_id = parseInt(req.params.id);
     const { approval_status } = req.body;
     const approved_by = req.user.user_id;
@@ -41,6 +49,10 @@ exports.approveLeave = async (req, res) => {
 };
 
 exports.approveExpense = async (req, res) => {
+    if (req.user.user_auth !== "관리자") {
+        return res.status(403).json({ error: "관리자 권한이 필요합니다." });
+    }
+
     const expense_id = parseInt(req.params.id);
     const { approval_status } = req.body;
     const approved_by = req.user.user_id;
