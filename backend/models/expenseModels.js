@@ -11,3 +11,24 @@ exports.createExpense = async (user_id, dept_id, amount, category, description) 
     );
     return result.rows[0];
 };
+
+exports.getAllExpenses = async () => {
+    const result = await pool.query(`
+        SELECT 
+            e.expense_id,
+            e.user_id,
+            u.user_name,
+            d.dept_name,
+            e.amount,
+            e.category,
+            e.description,
+            e.approval_status,
+            e.created_at,
+            e.approved_by
+        FROM "Expense" e
+        JOIN "User" u ON e.user_id = u.user_id
+        LEFT JOIN "Dept" d ON e.dept_id = d.dept_id
+        ORDER BY e.created_at DESC
+    `);
+    return result.rows;
+};

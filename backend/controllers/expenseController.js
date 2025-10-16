@@ -1,4 +1,4 @@
-const expenseModel = require("../models/expenseModel");
+const expenseModel = require("../models/expenseModels");
 
 exports.createExpense = async (req, res) => {
     const user_id = req.user.user_id;
@@ -14,5 +14,15 @@ exports.createExpense = async (req, res) => {
     } catch (err) {
         console.error("지출 신청 오류:", err);
         res.status(500).json({ error: "지출 신청 실패" });
+    }
+};
+
+exports.getAllExpenses = async (req, res) => {
+    try {
+        const expenses = await expenseModel.getAllExpenses();
+        res.json(expenses);
+    } catch (err) {
+        console.error("전체 지출 조회 오류:", err);
+        res.status(500).json({ error: "지출 전체 조회 실패" });
     }
 };
