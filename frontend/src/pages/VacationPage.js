@@ -1,15 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import {
-  Card,
-  Form,
-  Button,
-  Row,
-  Col,
-  ProgressBar,
-  Spinner,
-  ListGroup,
-} from "react-bootstrap";
+import { Card, Form, Button, Row, Col } from "react-bootstrap";
 import BottomNav from "../components/Nav";
 import { BsCalendar4Week, BsClipboardCheck } from "react-icons/bs";
 import Header from "../components/Header";
@@ -18,15 +9,13 @@ function VacationPage({ onMenuSelect }) {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [reason, setReason] = useState("");
-  const [usedDays, setUsedDays] = useState(7);
-  const [totalDays, setTotalDays] = useState(15);
+  const [leaveType, setLeaveType] = useState("연차");
   const [loading, setLoading] = useState(false);
-  const [leaveList, setLeaveList] = useState([]); // ✅ 자동 조회된 연차 목록
+  const [leaveList, setLeaveList] = useState([]);
   const [fetching, setFetching] = useState(false);
 
   const getToken = () => localStorage.getItem("token");
 
-  // ✅ 토큰에서 user_id 추출 (JWT payload decode)
   const parseJwt = (token) => {
     try {
       const base64Url = token.split(".")[1];
@@ -38,12 +27,12 @@ function VacationPage({ onMenuSelect }) {
           .join("")
       );
       return JSON.parse(jsonPayload);
-    } catch (e) {
+    } catch {
       return null;
     }
   };
 
-  // ✅ 내 연차 목록 자동 조회
+  // ✅ 내 휴가 목록 조회
   const fetchMyLeaveList = async () => {
     const token = getToken();
     if (!token) {
@@ -83,15 +72,21 @@ function VacationPage({ onMenuSelect }) {
     }
   };
 
-  // ✅ 페이지 로드 시 자동 실행
   useEffect(() => {
     fetchMyLeaveList();
   }, []);
 
-  // ✅ 연차 신청
+  // ✅ 휴가 신청
   const handleApply = async () => {
-    if (!startDate || !endDate) {
-      alert("날짜를 선택해주세요!");
+    if (!startDate) {
+      alert("시작일을 선택해주세요!");
+      return;
+    }
+
+    const appliedEndDate = leaveType === "반차" ? startDate : endDate;
+
+    if (leaveType === "연차" && !endDate) {
+      alert("종료일을 선택해주세요!");
       return;
     }
 
@@ -108,9 +103,9 @@ function VacationPage({ onMenuSelect }) {
         "http://localhost:3000/leave",
         {
           start_date: startDate,
-          end_date: endDate,
+          end_date: appliedEndDate,
           reason,
-          leave_type: "연차",
+          leave_type: leaveType,
         },
         {
           headers: {
@@ -120,28 +115,27 @@ function VacationPage({ onMenuSelect }) {
         }
       );
 
-      const result = response.data?.result;
-      const message = response.data?.message || "연차 신청 완료";
-
+      const message = response.data?.message || "휴가 신청 완료";
       alert(`✅ ${message}`);
-      // ✅ 신청 후 자동 갱신
       fetchMyLeaveList();
-
       setStartDate("");
       setEndDate("");
       setReason("");
+      setLeaveType("연차");
     } catch (err) {
-      console.error("❌ 연차 신청 실패:", err);
+      console.error("❌ 휴가 신청 실패:", err);
       const msg = err.response?.data?.error || err.message;
-      alert(`❌ 연차 신청 실패: ${msg}`);
+      alert(`❌ 휴가 신청 실패: ${msg}`);
     } finally {
       setLoading(false);
     }
   };
 
-  // ✅ 연차 일수 계산
   const calculateDays = () => {
-    if (!startDate || !endDate) return 0;
+    if (!startDate) return 0;
+    if (leaveType === "반차") return 0.5;
+    if (!endDate) return 0;
+
     const start = new Date(startDate);
     const end = new Date(endDate);
     const diff = (end - start) / (1000 * 60 * 60 * 24) + 1;
@@ -149,7 +143,6 @@ function VacationPage({ onMenuSelect }) {
   };
 
   const requestedDays = calculateDays();
-  const remainingDays = totalDays - usedDays - requestedDays;
 
   return (
     <>
@@ -160,10 +153,10 @@ function VacationPage({ onMenuSelect }) {
           minHeight: "100vh",
           backgroundColor: "#f8f9fa",
           paddingBottom: "100px",
-          paddingTop: "20px",
+          paddingTop: "80px",
         }}
       >
-        {/* ✅ 연차 신청 */}
+        {/* ✅ 휴가 신청 */}
         <Card
           className="shadow-sm border-0"
           style={{
@@ -174,17 +167,37 @@ function VacationPage({ onMenuSelect }) {
         >
           <Card.Body>
             <h5 className="fw-bold mb-3 d-flex align-items-center">
-              <BsCalendar4Week className="me-2 text-primary" /> 연차 신청
+              <BsCalendar4Week className="me-2 text-primary" /> 휴가 신청
             </h5>
+
+            <Form.Group className="mb-3">
+              <Form.Label>휴가 종류</Form.Label>
+              <Form.Select
+                value={leaveType}
+                onChange={(e) => {
+                  const type = e.target.value;
+                  setLeaveType(type);
+                  if (type === "반차" && startDate) setEndDate(startDate);
+                }}
+                disabled={loading}
+              >
+                <option value="연차">연차</option>
+                <option value="반차">반차</option>
+              </Form.Select>
+            </Form.Group>
 
             <Row className="mb-3">
               <Col>
                 <Form.Label>시작일</Form.Label>
                 <Form.Control
                   type="date"
-                  min={new Date().toISOString().split("T")[0]} 
+                  min={new Date().toISOString().split("T")[0]}
                   value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setStartDate(val);
+                    if (leaveType === "반차") setEndDate(val);
+                  }}
                   disabled={loading}
                 />
               </Col>
@@ -192,9 +205,10 @@ function VacationPage({ onMenuSelect }) {
                 <Form.Label>종료일</Form.Label>
                 <Form.Control
                   type="date"
+                  min={startDate || new Date().toISOString().split("T")[0]}
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
-                  disabled={loading}
+                  disabled={leaveType === "반차" || !startDate || loading}
                 />
               </Col>
             </Row>
@@ -204,7 +218,7 @@ function VacationPage({ onMenuSelect }) {
               <Form.Control
                 as="textarea"
                 rows={3}
-                placeholder="연차 사용 사유를 입력하세요."
+                placeholder="휴가 사유를 입력하세요."
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
                 disabled={loading}
@@ -216,9 +230,6 @@ function VacationPage({ onMenuSelect }) {
                 <span>신청 일수</span>
                 <strong className="text-primary">{requestedDays}일</strong>
               </div>
-              <div className="d-flex justify-content-between mt-1">
-               
-              </div>
             </Card>
 
             <Button
@@ -228,57 +239,85 @@ function VacationPage({ onMenuSelect }) {
               disabled={loading}
             >
               <BsClipboardCheck className="me-2" />
-              {loading ? "신청 중..." : "연차 신청하기"}
+              {loading ? "신청 중..." : "휴가 신청하기"}
             </Button>
           </Card.Body>
         </Card>
 
-        {/* ✅ 내 연차 목록 자동 표시 */}
+        {/* ✅ 내 휴가 내역 (디자인 개선 완료) */}
         <Card
           className="shadow-sm border-0 mt-3"
           style={{ width: "92%", borderRadius: "20px", background: "#fff" }}
         >
           <Card.Body>
-            <h5 className="fw-bold mb-3 text-secondary">내 연차 내역</h5>
+            <h5 className="fw-bold mb-3 text-secondary d-flex align-items-center">
+              <BsClipboardCheck className="me-2" /> 내 휴가 내역
+            </h5>
 
             {fetching ? (
-              <div className="text-center text-muted">불러오는 중...</div>
+              <div className="text-center text-muted py-3">불러오는 중...</div>
             ) : leaveList.length > 0 ? (
-              <ListGroup variant="flush">
+              <div className="d-flex flex-column gap-3">
                 {leaveList.map((leave) => (
-                  <ListGroup.Item
+                  <Card
                     key={leave.leave_id}
-                    className="border-0 shadow-sm mb-3 rounded-3"
+                    className="border-0 shadow-sm rounded-4 px-3 py-2"
+                    style={{
+                      backgroundColor: "#fdfdfd",
+                      borderLeft:
+                        leave.approval_status === "승인"
+                          ? "5px solid #28a745"
+                          : leave.approval_status === "대기"
+                          ? "5px solid #ffc107"
+                          : "5px solid #dc3545",
+                    }}
                   >
-                  
-              
-                    <div>
-                      🗓 {new Date(leave.start_date).toLocaleDateString()} ~{" "}
-                      {new Date(leave.end_date).toLocaleDateString()}
+                    <div className="d-flex justify-content-between align-items-center mb-2">
+                      <h6 className="fw-bold mb-0 text-primary">
+                        {leave.leave_type} 신청
+                      </h6>
+                      <span
+                        className="badge px-3 py-1"
+                        style={{
+                          backgroundColor:
+                            leave.approval_status === "승인"
+                              ? "#d4edda"
+                              : leave.approval_status === "대기"
+                              ? "#fff3cd"
+                              : "#f8d7da",
+                          color:
+                            leave.approval_status === "승인"
+                              ? "#155724"
+                              : leave.approval_status === "대기"
+                              ? "#856404"
+                              : "#721c24",
+                        }}
+                      >
+                        {leave.approval_status}
+                      </span>
                     </div>
-                    <div>💬 사유: {leave.reason}</div>
-                    <div
-                      style={{
-                        color:
-                          leave.approval_status === "승인"
-                            ? "green"
-                            : leave.approval_status === "대기"
-                            ? "orange"
-                            : "red",
-                      }}
-                    >
-                      승인 상태: {leave.approval_status}
+
+                    <div className="small text-muted" style={{ lineHeight: "1.5" }}>
+                      <div>
+                        🗓 <strong>기간:</strong>{" "}
+                        {new Date(leave.start_date).toLocaleDateString("ko-KR")}
+                        {leave.start_date !== leave.end_date &&
+                          ` ~ ${new Date(leave.end_date).toLocaleDateString("ko-KR")}`}
+                      </div>
+                      <div>
+                        💬 <strong>사유:</strong> {leave.reason || "없음"}
+                      </div>
+                      <div>
+                        📅 <strong>신청일:</strong>{" "}
+                        {new Date(leave.applied_at).toLocaleString("ko-KR")}
+                      </div>
                     </div>
-                    <small className="text-muted">
-                      신청일:{" "}
-                      {new Date(leave.applied_at).toLocaleString("ko-KR")}
-                    </small>
-                  </ListGroup.Item>
+                  </Card>
                 ))}
-              </ListGroup>
+              </div>
             ) : (
-              <div className="text-muted text-center">
-                연차 내역이 없습니다.
+              <div className="text-muted text-center py-3">
+                휴가 내역이 없습니다.
               </div>
             )}
           </Card.Body>
