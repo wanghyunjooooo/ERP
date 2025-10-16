@@ -14,7 +14,7 @@ exports.createStartWork = async (user_id, attend_date) => {
     const result = await pool.query(
         `
         INSERT INTO "Attend" (user_id, attend_date, start_time, status, approval_status)
-        VALUES ($1, $2, NOW()::time, '출근', '대기')
+        VALUES ($1, $2, NOW()::time, '출근 대기', '대기')
         RETURNING attend_id, user_id, attend_date, start_time, status, approval_status
         `,
         [user_id, attend_date]
@@ -43,7 +43,7 @@ exports.createEndWork = async (user_id, attend_date) => {
     const result = await pool.query(
         `
         INSERT INTO "Attend" (user_id, attend_date, end_time, total_hours, status, approval_status)
-        VALUES ($1, $2, NOW()::time, $3, '퇴근', '대기')
+        VALUES ($1, $2, NOW()::time, $3, '퇴근 대기', '대기')
         RETURNING attend_id, user_id, attend_date, end_time, total_hours, status, approval_status
         `,
         [user_id, attend_date, total_hours]
@@ -103,10 +103,14 @@ exports.getAllStatus = async (targetDate) => {
             a.approval_status
         FROM "User" u
         LEFT JOIN "Dept" d ON u.dept_id = d.dept_id
-        LEFT JOIN "Attend" a 
-            ON u.user_id = a.user_id 
-            AND a.attend_date = $1
-        ORDER BY d.dept_name, u.user_name
+        LEFT JOIN LATERAL (
+            SELECT attend_date, start_time, end_time, total_hours, status, approval_status
+            FROM "Attend"
+            WHERE user_id = u.user_id AND attend_date = $1
+            ORDER BY attend_id DESC
+            LIMIT 1
+        ) a ON TRUE
+        ORDER BY d.dept_name, u.user_name;
     `,
         [targetDate]
     );
@@ -119,7 +123,7 @@ exports.getAllStatus = async (targetDate) => {
         start_time: row.start_time,
         end_time: row.end_time,
         total_hours: row.total_hours,
-        status: row.start_time ? (row.end_time ? "퇴근" : "출근") : "미출근",
+        status: row.status || "미출근",
         approval_status: row.approval_status || "없음",
     }));
 };
@@ -139,10 +143,14 @@ exports.getStatusByUserId = async (user_id, targetDate) => {
             a.approval_status
         FROM "User" u
         LEFT JOIN "Dept" d ON u.dept_id = d.dept_id
-        LEFT JOIN "Attend" a 
-            ON u.user_id = a.user_id 
-            AND a.attend_date = $2
-        WHERE u.user_id = $1
+        LEFT JOIN LATERAL (
+            SELECT attend_date, start_time, end_time, total_hours, status, approval_status
+            FROM "Attend"
+            WHERE user_id = u.user_id AND attend_date = $2
+            ORDER BY attend_id DESC
+            LIMIT 1
+        ) a ON TRUE
+        WHERE u.user_id = $1;
         `,
         [user_id, targetDate]
     );
@@ -150,7 +158,7 @@ exports.getStatusByUserId = async (user_id, targetDate) => {
     const row = result.rows[0];
     if (!row) return null;
 
-    return {
+    return result.rows.map((row) => ({
         user_id: row.user_id,
         user_name: row.user_name,
         dept_name: row.dept_name,
@@ -158,9 +166,9 @@ exports.getStatusByUserId = async (user_id, targetDate) => {
         start_time: row.start_time,
         end_time: row.end_time,
         total_hours: row.total_hours,
-        status: row.start_time ? (row.end_time ? "퇴근" : "출근") : "미출근",
+        status: row.status || "미출근",
         approval_status: row.approval_status || "없음",
-    };
+    }));
 };
 
 exports.getMonthlySummary = async (user_id) => {
