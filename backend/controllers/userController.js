@@ -64,13 +64,15 @@ exports.login = async (req, res) => {
 
 exports.getAllUsers = async (req, res) => {
     try {
+        if (req.user.user_auth !== "관리자") {
+            return res.status(403).json({ error: "관리자 권한이 필요합니다" });
+        }
+
         const users = await userModel.getAllUsers();
         res.json(users);
     } catch (err) {
         console.error("사원 조회 오류:", err);
-        res.status(500).json({
-            error: "사원 조회 실패",
-        });
+        res.status(500).json({ error: "사원 조회 실패" });
     }
 };
 
@@ -78,6 +80,10 @@ exports.getUserById = async (req, res) => {
     const user_id = parseInt(req.params.id);
 
     try {
+        if (req.user.user_auth !== "관리자") {
+            return res.status(403).json({ error: "관리자 권한이 필요합니다" });
+        }
+
         const user = await userModel.getUserById(user_id);
         if (!user) return res.status(404).json({ error: "해당 사원을 찾을 수 없습니다" });
 
