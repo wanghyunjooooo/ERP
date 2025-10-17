@@ -10,7 +10,7 @@ function Header({ title }) {
   return (
     <Navbar
       bg="white"
-      className="shadow-sm px-3 justify-content-between"
+      className="shadow-sm px-3 position-relative"
       fixed="top"
       style={{
         height: "60px",
@@ -18,29 +18,39 @@ function Header({ title }) {
         zIndex: 1050,
       }}
     >
+      {/* 중앙 ERP 로고 */}
       <div
-        onClick={() => navigate("/home")}
         style={{
-          cursor: "pointer",
+          position: "absolute",
+          left: "50%",
+          transform: "translateX(-50%)",
           display: "flex",
           alignItems: "center",
           gap: "8px",
         }}
       >
-        <BsHouseDoorFill size={22} color="#4e73df" />
-        <span className="fw-bold" style={{ color: "#4e73df" }}>
+        <span className="fw-bold" style={{ color: "#4e73df", fontSize: "1.1rem" }}>
           ERP
         </span>
+        {title && (
+          <h6 className="m-0 text-dark fw-semibold" style={{ fontSize: "1rem" }}>
+            {title}
+          </h6>
+        )}
       </div>
 
-      <h6
-        className="m-0 text-dark fw-semibold"
-        style={{ fontSize: "1rem", textAlign: "center" }}
+      {/* 오른쪽 홈 버튼 */}
+      <div
+        onClick={() => navigate("/home")}
+        style={{
+          marginLeft: "auto",
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+        }}
       >
-        {title}
-      </h6>
-
-      <div style={{ width: "32px" }}></div> {/* 오른쪽 여백 맞춤용 */}
+        <BsHouseDoorFill size={22} color="#4e73df" />
+      </div>
     </Navbar>
   );
 }

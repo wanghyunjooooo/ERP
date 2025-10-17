@@ -12,8 +12,6 @@ const ExpenseListPage = () => {
       const token = localStorage.getItem("token");
       const url = "http://localhost:3000/expense"; // ✅ 백엔드 주소
 
-      console.log("📡 [FETCH START] 지출내역 요청 시작");
-
       try {
         const response = await axios.get(url, {
           headers: { Authorization: `Bearer ${token}` },
