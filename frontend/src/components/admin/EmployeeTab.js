@@ -115,7 +115,10 @@ function EmployeeTab() {
   // ✅ 권한 변경
   const handleAuthChange = async (user_id, currentAuth) => {
     const newAuth = currentAuth === "관리자" ? "일반" : "관리자";
-    if (!window.confirm(`해당 사용자의 권한을 '${newAuth}'로 변경하시겠습니까?`)) return;
+    if (
+      !window.confirm(`해당 사용자의 권한을 '${newAuth}'로 변경하시겠습니까?`)
+    )
+      return;
 
     try {
       const token = localStorage.getItem("token");
@@ -141,154 +144,173 @@ function EmployeeTab() {
     }
   };
 
-return (
-  <div style={{ paddingBottom: "120px", minHeight: "100vh" }}>
-    <Container className="p-0">
-      <Card className="p-4 shadow-sm border-0 rounded-4 mb-4">
-        <h5 className="fw-bold mb-3">👥 직원 관리</h5>
+  return (
+    <div style={{ paddingBottom: "120px", minHeight: "100vh" }}>
+      <Container className="p-0">
+        <Card className="p-4 shadow-sm border-0 rounded-4 mb-4">
+          <h5 className="fw-bold mb-3">👥 직원 관리</h5>
 
-        {/* 직원 추가 폼 */}
-        <Form className="mb-3 small-text">
-          <Row className="g-2">
-            <Col xs={6}>
-              <Form.Control
-                placeholder="이름"
-                value={newEmp.user_name}
-                onChange={(e) =>
-                  setNewEmp({ ...newEmp, user_name: e.target.value })
-                }
-              />
-            </Col>
-            <Col xs={6}>
-              <Form.Control
-                placeholder="이메일"
-                value={newEmp.user_email}
-                onChange={(e) =>
-                  setNewEmp({ ...newEmp, user_email: e.target.value })
-                }
-              />
-            </Col>
-            <Col xs={6}>
-              <Form.Control
-                placeholder="비밀번호"
-                type="password"
-                value={newEmp.user_password}
-                onChange={(e) =>
-                  setNewEmp({ ...newEmp, user_password: e.target.value })
-                }
-              />
-            </Col>
-            <Col xs={6}>
-              <Form.Control
-                type="date"
-                value={newEmp.birthday}
-                onChange={(e) =>
-                  setNewEmp({ ...newEmp, birthday: e.target.value })
-                }
-              />
-            </Col>
-            <Col xs={6}>
-              <Form.Control
-                type="date"
-                value={newEmp.join_date}
-                onChange={(e) =>
-                  setNewEmp({ ...newEmp, join_date: e.target.value })
-                }
-              />
-            </Col>
-            <Col xs={6}>
-              <Form.Select
-                value={newEmp.dept_id}
-                onChange={(e) =>
-                  setNewEmp({ ...newEmp, dept_id: e.target.value })
-                }
-              >
-                <option value="">부서 선택</option>
-                <option value="1">개발 1</option>
-                <option value="2">개발 2</option>
-                <option value="3">디자인</option>
-                <option value="4">기획</option>
-              </Form.Select>
-            </Col>
-            <Col xs={12}>
-              <Form.Select
-                value={newEmp.user_auth}
-                onChange={(e) =>
-                  setNewEmp({ ...newEmp, user_auth: e.target.value })
-                }
-              >
-                <option value="일반">일반</option>
-                <option value="관리자">관리자</option>
-              </Form.Select>
-            </Col>
-          </Row>
-          <Button className="w-100 mt-3 py-2 fw-semibold" onClick={handleRegister}>
-            직원 추가
-          </Button>
-        </Form>
-      </Card>
+          {/* 직원 추가 폼 */}
+          <Form className="mb-3 small-text">
+            <Row className="g-2">
+              <Col xs={6}>
+                <Form.Label className="fw-semibold small mb-1">이름</Form.Label>
+                <Form.Control
+                  placeholder="예: 홍길동"
+                  value={newEmp.user_name}
+                  onChange={(e) =>
+                    setNewEmp({ ...newEmp, user_name: e.target.value })
+                  }
+                />
+              </Col>
 
-      {/* 직원 목록 */}
-      {loading ? (
-        <div className="text-center py-4">
-          <Spinner animation="border" />
-        </div>
-      ) : employees.length === 0 ? (
-        <p className="text-center text-muted py-3">등록된 직원이 없습니다.</p>
-      ) : (
-        <div className="d-flex flex-column gap-3">
-          {employees.map((emp) => (
-            <Card
-              key={emp.user_id}
-              className="p-3 shadow-sm border-0 rounded-3"
-              style={{ fontSize: "0.9rem" }}
-            >
-              <div className="d-flex justify-content-between align-items-center">
-                <div>
-                  <h6 className="fw-bold mb-1">{emp.user_name}</h6>
-                  <small className="text-muted">{emp.user_email}</small>
-                </div>
-                <Badge
-                  bg={emp.user_auth === "관리자" ? "warning" : "secondary"}
-                  text={emp.user_auth === "관리자" ? "dark" : "light"}
-                  className="px-2 py-1"
+              <Col xs={6}>
+                <Form.Label className="fw-semibold small mb-1">이메일</Form.Label>
+                <Form.Control
+                  type="email"
+                  placeholder="예: user@email.com"
+                  value={newEmp.user_email}
+                  onChange={(e) =>
+                    setNewEmp({ ...newEmp, user_email: e.target.value })
+                  }
+                />
+              </Col>
+
+              <Col xs={6}>
+                <Form.Label className="fw-semibold small mb-1">비밀번호</Form.Label>
+                <Form.Control
+                  type="password"
+                  placeholder="비밀번호 입력"
+                  value={newEmp.user_password}
+                  onChange={(e) =>
+                    setNewEmp({ ...newEmp, user_password: e.target.value })
+                  }
+                />
+              </Col>
+
+              <Col xs={6}>
+                <Form.Label className="fw-semibold small mb-1">생년월일</Form.Label>
+                <Form.Control
+                  type="date"
+                  value={newEmp.birthday}
+                  onChange={(e) =>
+                    setNewEmp({ ...newEmp, birthday: e.target.value })
+                  }
+                />
+              </Col>
+
+              <Col xs={6}>
+                <Form.Label className="fw-semibold small mb-1">입사일</Form.Label>
+                <Form.Control
+                  type="date"
+                  value={newEmp.join_date}
+                  onChange={(e) =>
+                    setNewEmp({ ...newEmp, join_date: e.target.value })
+                  }
+                />
+              </Col>
+
+              <Col xs={6}>
+                <Form.Label className="fw-semibold small mb-1">부서</Form.Label>
+                <Form.Select
+                  value={newEmp.dept_id}
+                  onChange={(e) =>
+                    setNewEmp({ ...newEmp, dept_id: e.target.value })
+                  }
                 >
-                  {emp.user_auth}
-                </Badge>
-              </div>
+                  <option value="">부서 선택</option>
+                  <option value="1">개발 1팀</option>
+                  <option value="2">개발 2팀</option>
+                  <option value="3">디자인팀</option>
+                  <option value="4">기획팀</option>
+                  <option value="5">인사팀</option>
+                </Form.Select>
+              </Col>
 
-              <hr className="my-2" />
+              <Col xs={12}>
+                <Form.Label className="fw-semibold small mb-1">권한</Form.Label>
+                <Form.Select
+                  value={newEmp.user_auth}
+                  onChange={(e) =>
+                    setNewEmp({ ...newEmp, user_auth: e.target.value })
+                  }
+                >
+                  <option value="일반">일반</option>
+                  <option value="관리자">관리자</option>
+                </Form.Select>
+              </Col>
+            </Row>
 
-              <div className="text-muted small">
-                <div>부서: {emp.dept_name}</div>
-                <div>
-                  입사일: {new Date(emp.join_date).toLocaleDateString("ko-KR")}
-                </div>
-                <div>
-                  생일: {new Date(emp.birthday).toLocaleDateString("ko-KR")}
-                </div>
-              </div>
+            <Button
+              className="w-100 mt-3 py-2 fw-semibold"
+              onClick={handleRegister}
+            >
+              직원 추가
+            </Button>
+          </Form>
+        </Card>
 
-              <Button
-                size="sm"
-                variant={
-                  emp.user_auth === "관리자"
-                    ? "outline-secondary"
-                    : "outline-warning"
-                }
-                className="mt-3 w-100"
-                onClick={() => handleAuthChange(emp.user_id, emp.user_auth)}
+        {/* 직원 목록 */}
+        {loading ? (
+          <div className="text-center py-4">
+            <Spinner animation="border" />
+          </div>
+        ) : employees.length === 0 ? (
+          <p className="text-center text-muted py-3">등록된 직원이 없습니다.</p>
+        ) : (
+          <div className="d-flex flex-column gap-3">
+            {employees.map((emp) => (
+              <Card
+                key={emp.user_id}
+                className="p-3 shadow-sm border-0 rounded-3"
+                style={{ fontSize: "0.9rem" }}
               >
-                권한 변경
-              </Button>
-            </Card>
-          ))}
-        </div>
-      )}
-    </Container>
-  </div>
-);
+                <div className="d-flex justify-content-between align-items-center">
+                  <div>
+                    <h6 className="fw-bold mb-1">{emp.user_name}</h6>
+                    <small className="text-muted">{emp.user_email}</small>
+                  </div>
+                  <Badge
+                    bg={emp.user_auth === "관리자" ? "warning" : "secondary"}
+                    text={emp.user_auth === "관리자" ? "dark" : "light"}
+                    className="px-2 py-1"
+                  >
+                    {emp.user_auth}
+                  </Badge>
+                </div>
 
+                <hr className="my-2" />
+
+                <div className="text-muted small">
+                  <div>부서: {emp.dept_name}</div>
+                  <div>
+                    입사일:{" "}
+                    {new Date(emp.join_date).toLocaleDateString("ko-KR")}
+                  </div>
+                  <div>
+                    생일: {new Date(emp.birthday).toLocaleDateString("ko-KR")}
+                  </div>
+                </div>
+
+                <Button
+                  size="sm"
+                  variant={
+                    emp.user_auth === "관리자"
+                      ? "outline-secondary"
+                      : "outline-warning"
+                  }
+                  className="mt-3 w-100"
+                  onClick={() => handleAuthChange(emp.user_id, emp.user_auth)}
+                >
+                  권한 변경
+                </Button>
+              </Card>
+            ))}
+          </div>
+        )}
+      </Container>
+    </div>
+  );
 }
 
 export default EmployeeTab;
