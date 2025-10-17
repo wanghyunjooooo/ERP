@@ -21,7 +21,7 @@ function Home() {
   const monthlyGoal = 160;
   const weeklyGoal = 40;
 
-  // 오늘 날짜 표시용
+  // ✅ 오늘 날짜 표시
   useEffect(() => {
     const now = new Date();
     const formatted = now.toLocaleDateString("ko-KR", {
@@ -43,6 +43,9 @@ function Home() {
   const makeDisplayStatus = (status, approval_status) => {
     if (!status && !approval_status) return "확인중";
 
+    // ✅ 지각일 때도 근무로 간주
+    if (approval_status === "지각") return "지각";
+
     if (status === "출근") {
       if (approval_status === "대기") return "출근 대기";
       if (approval_status === "승인") return "근무";
@@ -56,6 +59,7 @@ function Home() {
     }
 
     if (status === "근무") return "근무";
+
     return status || "확인중";
   };
 
@@ -84,7 +88,7 @@ function Home() {
       });
   }, []);
 
-  // ✅ 현재 출퇴근 상태 불러오기 (DB 기준)
+  // ✅ 현재 출퇴근 상태 불러오기
   const fetchAttendanceStatus = async () => {
     try {
       const token = getToken();
@@ -97,22 +101,21 @@ function Home() {
 
       console.log("📡 서버 응답:", res.data);
 
-      // ✅ 배열 응답인 경우 첫 번째 항목 사용
       const latest =
         Array.isArray(res.data) && res.data.length > 0
           ? res.data[0]
           : res.data;
 
       const { status, approval_status } = latest || {};
-     
+
       setRawStatus({ status, approval_status });
       setCurrentStatus(makeDisplayStatus(status, approval_status));
     } catch (err) {
-     
+      console.error("❌ 근태 상태 조회 실패:", err);
     }
   };
 
-  // ✅ 전체 데이터(근태 목록, 요약) 불러오기
+  // ✅ 전체 데이터 불러오기
   const fetchAll = async () => {
     const token = getToken();
     if (!token) return requireLogin();
@@ -156,7 +159,7 @@ function Home() {
     })();
   }, [user]);
 
-  // ✅ 출퇴근 요청 (버튼에서 호출)
+  // ✅ 출퇴근 요청
   const handleWorkToggle = async () => {
     if (!user) return requireLogin();
     const token = getToken();
@@ -167,7 +170,7 @@ function Home() {
       const a = rawStatus.approval_status;
       let endpoint = "";
 
-      if (s === "근무" || (s === "출근" && a === "승인")) {
+      if (s === "근무" || s === "출근" || a === "승인" || a === "지각") {
         endpoint = "http://localhost:3000/attend/end";
       } else {
         endpoint = "http://localhost:3000/attend/start";
@@ -178,18 +181,15 @@ function Home() {
 
       if (attend) {
         const { status, approval_status } = attend;
-       
         setRawStatus({ status, approval_status });
         setCurrentStatus(makeDisplayStatus(status, approval_status));
       } else {
-        // 응답이 없으면 강제로 다시 조회
         await fetchAttendanceStatus();
       }
 
-      // 최신 목록 갱신
       fetchAll();
     } catch (err) {
-     
+      console.error("❌ 출퇴근 요청 실패:", err);
       alert("요청 중 오류가 발생했습니다.");
     }
   };
@@ -218,7 +218,7 @@ function Home() {
         }}
         className="shadow-sm"
       >
-        <Container className="justify-content-center">
+        <Container className="justify-content-end">
           <Navbar.Brand className="text-white fw-bold fs-5 mb-0">
             ERP
           </Navbar.Brand>
@@ -231,7 +231,6 @@ function Home() {
         </h5>
         <p className="text-muted text-center mb-4">{today}</p>
 
-        {/* ✅ WorkButton */}
         <WorkButton
           currentStatus={currentStatus}
           fetchAttendanceStatus={fetchAttendanceStatus}
