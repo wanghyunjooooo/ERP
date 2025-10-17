@@ -1,1 +1,8 @@
 uploads/
+
+tests/
+.test
+
+jest.config.js
+
+app.js
