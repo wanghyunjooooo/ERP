@@ -15,11 +15,11 @@ function ExpensePage({ onMenuSelect }) {
   const [loading, setLoading] = useState(false);
   const [departments, setDepartments] = useState([]);
 
-  
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!amount || !date || !reason || !category || !deptId) {
+    // ✅ 모든 항목 (영수증 포함) 입력 여부 체크
+    if (!amount || !date || !reason || !category || !deptId || !receipt) {
       alert("모든 항목을 입력해주세요!");
       return;
     }
@@ -30,13 +30,14 @@ function ExpensePage({ onMenuSelect }) {
       return;
     }
 
+    // FormData 생성
     const formData = new FormData();
     formData.append("amount", amount);
     formData.append("date", date);
     formData.append("category", category);
     formData.append("description", reason);
     formData.append("dept_id", deptId);
-    if (receipt) formData.append("receipt", receipt);
+    formData.append("receipt", receipt);
 
     try {
       setLoading(true);
@@ -50,6 +51,7 @@ function ExpensePage({ onMenuSelect }) {
       console.log("✅ 지출 신청 성공:", res.data);
       alert("✅ 지출 신청이 완료되었습니다!");
 
+      // 입력 초기화
       setAmount("");
       setDate("");
       setReason("");
@@ -143,25 +145,26 @@ function ExpensePage({ onMenuSelect }) {
                   </Form.Select>
                 </Form.Group>
 
-              <Form.Group className="mb-3">
-  <Form.Label>부서</Form.Label>
-  <InputGroup>
-    <InputGroup.Text>
-      <BsBuilding />
-    </InputGroup.Text>
-    <Form.Select
-      value={deptId}
-      onChange={(e) => setDeptId(e.target.value)}
-    >
-      <option value="">부서를 선택하세요</option>
-      <option value="1">개발 1</option>
-      <option value="2">개발 2</option>
-      <option value="3">개발 3</option>
-      <option value="4">웹업</option>
-      <option value="5">전략기획</option>
-    </Form.Select>
-  </InputGroup>
-</Form.Group>
+                {/* 부서 */}
+                <Form.Group className="mb-3">
+                  <Form.Label>부서</Form.Label>
+                  <InputGroup>
+                    <InputGroup.Text>
+                      <BsBuilding />
+                    </InputGroup.Text>
+                    <Form.Select
+                      value={deptId}
+                      onChange={(e) => setDeptId(e.target.value)}
+                    >
+                      <option value="">부서를 선택하세요</option>
+                      <option value="1">개발 1</option>
+                      <option value="2">개발 2</option>
+                      <option value="3">개발 3</option>
+                      <option value="4">웹업</option>
+                      <option value="5">전략기획</option>
+                    </Form.Select>
+                  </InputGroup>
+                </Form.Group>
 
                 {/* 영수증 */}
                 <Form.Group className="mb-3">
