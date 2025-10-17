@@ -14,12 +14,7 @@ function Home() {
   const [user, setUser] = useState(null);
   const [attendList, setAttendList] = useState([]);
   const [approvalList, setApprovalList] = useState([]);
-  const [monthlyHours, setMonthlyHours] = useState(0);
-  const [weeklyHours, setWeeklyHours] = useState(0);
   const [loading, setLoading] = useState(true);
-
-  const monthlyGoal = 160;
-  const weeklyGoal = 40;
 
   // ✅ 오늘 날짜 표시
   useEffect(() => {
@@ -37,30 +32,6 @@ function Home() {
   const requireLogin = () => {
     alert("로그인이 필요합니다. 로그인 페이지로 이동합니다.");
     window.location.href = "/login";
-  };
-
-  // ✅ DB status + approval_status → 화면 표시용 변환 함수
-  const makeDisplayStatus = (status, approval_status) => {
-    if (!status && !approval_status) return "확인중";
-
-    // ✅ 지각일 때도 근무로 간주
-    if (approval_status === "지각") return "지각";
-
-    if (status === "출근") {
-      if (approval_status === "대기") return "출근 대기";
-      if (approval_status === "승인") return "근무";
-      return "출근";
-    }
-
-    if (status === "퇴근") {
-      if (approval_status === "대기") return "퇴근 대기";
-      if (approval_status === "승인") return "퇴근";
-      return "퇴근";
-    }
-
-    if (status === "근무") return "근무";
-
-    return status || "확인중";
   };
 
   // ✅ 사용자 정보 불러오기
@@ -88,7 +59,7 @@ function Home() {
       });
   }, []);
 
-  // ✅ 현재 출퇴근 상태 불러오기
+  // ✅ 근태 상태 불러오기
   const fetchAttendanceStatus = async () => {
     try {
       const token = getToken();
@@ -99,14 +70,17 @@ function Home() {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      console.log("📡 서버 응답:", res.data);
-
       const latest =
         Array.isArray(res.data) && res.data.length > 0
           ? res.data[0]
           : res.data;
 
-      const { status, approval_status } = latest || {};
+      let { status, approval_status } = latest || {};
+
+      if (status === "퇴근" && approval_status === "대기") {
+        status = "출근";
+        approval_status = "대기";
+      }
 
       setRawStatus({ status, approval_status });
       setCurrentStatus(makeDisplayStatus(status, approval_status));
@@ -115,7 +89,29 @@ function Home() {
     }
   };
 
-  // ✅ 전체 데이터 불러오기
+  // ✅ 상태 표시 변환
+  const makeDisplayStatus = (status, approval_status) => {
+    if (!status && !approval_status) return "확인중";
+    if (approval_status === "지각") return "지각";
+
+    if (status === "출근") {
+      if (approval_status === "대기") return "출근 대기";
+      if (approval_status === "승인") return "근무";
+      return "출근";
+    }
+
+    if (status === "퇴근") {
+      if (approval_status === "대기") return "퇴근 대기";
+      if (approval_status === "승인") return "퇴근";
+      return "퇴근";
+    }
+
+    if (status === "근무") return "근무";
+
+    return status || "확인중";
+  };
+
+  // ✅ 근태기록 및 승인내역 불러오기
   const fetchAll = async () => {
     const token = getToken();
     if (!token) return requireLogin();
@@ -124,23 +120,13 @@ function Home() {
     try {
       setLoading(true);
       const userId = user.user_id;
-      const [attendRes, monthRes, weekRes] = await Promise.all([
-        axios.get(`http://localhost:3000/attend/${userId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-        axios.get(`http://localhost:3000/attend/summary/monthly/${userId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-        axios.get(`http://localhost:3000/attend/summary/weekly/${userId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-      ]);
+      const attendRes = await axios.get(`http://localhost:3000/attend/${userId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
       const attendData = attendRes.data || [];
       setAttendList(attendData);
       setApprovalList(attendData.filter((a) => a.approval_status === "대기"));
-      setMonthlyHours(Number(monthRes.data?.total_hours || 0));
-      setWeeklyHours(Number(weekRes.data?.total_hours || 0));
     } catch (err) {
       console.error("❌ 데이터 로드 실패:", err);
       if (err.response?.status === 401 || err.response?.status === 403)
@@ -159,7 +145,7 @@ function Home() {
     })();
   }, [user]);
 
-  // ✅ 출퇴근 요청
+  // ✅ 출퇴근 토글
   const handleWorkToggle = async () => {
     if (!user) return requireLogin();
     const token = getToken();
@@ -238,12 +224,9 @@ function Home() {
           onToggle={handleWorkToggle}
         />
 
-        <WorkSummary
-          monthlyHours={monthlyHours}
-          weeklyHours={weeklyHours}
-          monthlyGoal={monthlyGoal}
-          weeklyGoal={weeklyGoal}
-        />
+        {/* ✅ WorkSummary 단 하나만 남기기 */}
+        {user && <WorkSummary userId={user.user_id} />}
+
         <AttendList attendList={attendList} />
         <ApprovalList approvalList={approvalList} />
       </Container>
