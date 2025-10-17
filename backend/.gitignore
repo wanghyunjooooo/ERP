@@ -1,8 +1,11 @@
 uploads/
 
+# 테스트용 파일
 tests/
 .test
 
 jest.config.js
+load-test.yml
+
 
 app.js
