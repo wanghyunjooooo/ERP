@@ -153,7 +153,7 @@ function VacationPage({ onMenuSelect }) {
           minHeight: "100vh",
           backgroundColor: "#f8f9fa",
           paddingBottom: "100px",
-          paddingTop: "80px",
+          paddingTop: "20px",
         }}
       >
         {/* ✅ 휴가 신청 */}

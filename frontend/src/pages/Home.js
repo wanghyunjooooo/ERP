@@ -220,7 +220,7 @@ function Home() {
       >
         <Container className="justify-content-center">
           <Navbar.Brand className="text-white fw-bold fs-5 mb-0">
-            ERP 근태관리
+            ERP
           </Navbar.Brand>
         </Container>
       </Navbar>
