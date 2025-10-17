@@ -29,34 +29,46 @@ function Home() {
   }, []);
 
   const getToken = () => localStorage.getItem("token");
+
   const requireLogin = () => {
     alert("로그인이 필요합니다. 로그인 페이지로 이동합니다.");
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
     window.location.href = "/login";
   };
 
-  // ✅ 사용자 정보 불러오기
+  // ✅ 사용자 정보 불러오기 (토큰 포함)
   useEffect(() => {
-    const token = getToken();
-    const storedUser = localStorage.getItem("user");
-    if (!token || !storedUser) {
-      setLoading(false);
-      return;
-    }
+    const fetchUser = async () => {
+      const token = getToken();
+      const storedUser = localStorage.getItem("user");
 
-    const parsed = JSON.parse(storedUser);
-    axios
-      .get(`http://localhost:3000/users/${parsed.user_id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      .then((res) => setUser(res.data))
-      .catch((err) => {
+      if (!token || !storedUser) {
+        console.warn("⚠️ 토큰 또는 사용자 정보 없음 — 로그인 필요");
+        setLoading(false);
+        return requireLogin();
+      }
+
+      try {
+        const parsed = JSON.parse(storedUser);
+        const userId = parsed.user_id || parsed.id;
+
+        const res = await axios.get(`http://localhost:3000/users/${userId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        setUser(res.data);
+      } catch (err) {
         console.error("❌ 사용자 조회 실패:", err);
         if (err.response?.status === 401 || err.response?.status === 403) {
           requireLogin();
         } else {
           setLoading(false);
         }
-      });
+      }
+    };
+
+    fetchUser();
   }, []);
 
   // ✅ 근태 상태 불러오기
@@ -120,6 +132,7 @@ function Home() {
     try {
       setLoading(true);
       const userId = user.user_id;
+
       const attendRes = await axios.get(`http://localhost:3000/attend/${userId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
