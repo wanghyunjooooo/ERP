@@ -10,16 +10,36 @@ const ExpenseListPage = () => {
   useEffect(() => {
     const fetchExpenses = async () => {
       const token = localStorage.getItem("token");
-      const url = "http://localhost:3000/expense"; // ✅ 백엔드 주소
+
+      if (!token) {
+        console.error("❌ 토큰이 없습니다. 로그인 후 이용해주세요.");
+        return;
+      }
 
       try {
+        // ✅ JWT 토큰에서 user_id 추출
+        const decodedToken = JSON.parse(atob(token.split(".")[1]));
+        const userId = decodedToken.user_id;
+
+        const url = `http://localhost:3000/expense/${userId}`;
+
+        console.log("📡 요청 URL:", url);
+        console.log("🔑 토큰:", token ? "있음 ✅" : "없음 ❌");
+        console.log("👤 userId:", userId);
+
         const response = await axios.get(url, {
           headers: { Authorization: `Bearer ${token}` },
         });
+
         console.log("✅ [FETCH SUCCESS]", response.data);
         setExpenses(response.data);
       } catch (err) {
         console.error("❌ [FETCH ERROR]", err);
+        if (err.response) {
+          console.error("📩 서버 응답:", err.response.status, err.response.data);
+        } else {
+          console.error("🚨 요청 자체 실패:", err.message);
+        }
       } finally {
         setLoading(false);
       }
