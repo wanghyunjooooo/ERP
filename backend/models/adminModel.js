@@ -17,7 +17,7 @@ exports.updateAttendApproval = async (attend_id, approved_by, approval_status) =
             [approval_status, approved_by, attend_id]
         );
 
-        if (approval_status === "승인") {
+        if (approval_status === "승인" || approval_status === "지각") {
             if (attend.status === "출근 대기") {
                 await client.query(
                     `UPDATE "Attend"
