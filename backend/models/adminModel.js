@@ -33,11 +33,27 @@ exports.updateAttendApproval = async (attend_id, approved_by, approval_status) =
                     [attend_id]
                 );
             }
+        } else if (approval_status === "거절") {
+            if (attend.status === "출근 대기") {
+                await client.query(
+                    `UPDATE "Attend"
+                    SET status = '미출근'
+                    WHERE attend_id = $1`,
+                    [attend_id]
+                );
+            } else if (attend.status === "퇴근 대기") {
+                await client.query(
+                    `UPDATE "Attend"
+                    SET status = '출근'
+                    WHERE attend_id = $1`,
+                    [attend_id]
+                );
+            }
         }
 
         await client.query(
             `INSERT INTO "Approval" (user_id, approved_by, target_type, target_id, status, approved_at)
-             VALUES ($1, $2, 'Attend', $3, $4, NOW())`,
+            VALUES ($1, $2, 'Attend', $3, $4, NOW())`,
             [attend.user_id, approved_by, attend_id, approval_status]
         );
 
