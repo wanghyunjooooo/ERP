@@ -80,8 +80,8 @@ exports.getUserById = async (req, res) => {
     const user_id = parseInt(req.params.id);
 
     try {
-        if (req.user.user_auth !== "관리자") {
-            return res.status(403).json({ error: "관리자 권한이 필요합니다" });
+        if (req.user.user_id !== user_id && req.user.user_auth !== "관리자") {
+            return res.status(403).json({ error: "권한이 없습니다" });
         }
 
         const user = await userModel.getUserById(user_id);
